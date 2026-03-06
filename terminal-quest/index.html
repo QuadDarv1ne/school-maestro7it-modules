@@ -415,7 +415,20 @@ const autocompleteEl = document.getElementById('autocomplete');
 // ============================================================
 const THEMES = ['default', 'matrix', 'amber', 'light', 'ocean', 'sunset', 'forest', 'purple', 'dracula', 'nord', 'hacker', 'gruvbox', 'monokai'];
 
-const COMMANDS = ['help', 'pwd', 'ls', 'cd', 'cat', 'touch', 'mkdir', 'rm', 'mv', 'cp', 'ping', 'ps', 'kill', 'chmod', 'ssh', 'decrypt', 'history', 'profile', 'edit', 'theme', 'music', 'snake', 'hint', 'clear', 'reset'];
+const COMMANDS = [
+  'help', 'pwd', 'ls', 'cd', 'cat', 'touch', 'mkdir', 'rm', 'mv', 'cp',
+  'echo', 'printf', 'grep', 'find', 'head', 'tail', 'wc', 'sort', 'uniq', 'diff',
+  'uname', 'whoami', 'hostname', 'date', 'cal', 'uptime', 'free', 'df', 'du', 'top', 'htop',
+  'ifconfig', 'ip', 'netstat', 'ss', 'curl', 'wget', 'scp', 'rsync', 'traceroute', 'nslookup', 'dig', 'host',
+  'cut', 'paste', 'tr', 'rev', 'tac',
+  'tar', 'gzip', 'gunzip', 'zip', 'unzip', 'bzip2',
+  'chown', 'chgrp', 'sudo', 'su', 'who', 'w', 'last', 'groups', 'id', 'passwd',
+  'jobs', 'bg', 'fg', 'nohup', 'killall', 'pgrep', 'pidof',
+  'which', 'whereis', 'locate', 'alias', 'unalias', 'export', 'env', 'set', 'source',
+  'man', 'whatis', 'apropos', 'info',
+  'reboot', 'shutdown', 'halt', 'poweroff', 'mount', 'umount', 'fdisk', 'mkfs', 'fsck', 'dd', 'ln', 'readlink',
+  'ping', 'ps', 'kill', 'chmod', 'ssh', 'decrypt', 'history', 'profile', 'edit', 'theme', 'music', 'snake', 'hint', 'clear', 'reset'
+];
 
 // ============================================================
 // SMART AUTOCOMPLETE
@@ -1298,6 +1311,515 @@ async function process(raw) {
     case 'ssh': print(`SSH connecting to ${a1 || 'host'}...\nConnected.`, 'info'); break;
 
     case 'decrypt': print('Decrypting... root:password123', 'warn'); break;
+
+    // ========== НОВЫЕ LINUX-КОМАНДЫ ==========
+    case 'echo': {
+      let out = parts.slice(1).join(' ');
+      out = out.replace(/\\n/g, '\n').replace(/\\t/g, '\t');
+      print(out); break;
+    }
+
+    case 'printf': {
+      let out = parts.slice(1).join(' ');
+      out = out.replace(/\\n/g, '\n').replace(/\\t/g, '\t').replace(/\\r/g, '\r');
+      line(out); break;
+    }
+
+    case 'uname': {
+      if (a1 === '-a') { print('TerminalQuest 5.15.0 x86_64 GNU/Linux'); }
+      else if (a1 === '-r') { print('5.15.0'); }
+      else if (a1 === '-m') { print('x86_64'); }
+      else { print('TerminalQuest'); }
+      break;
+    }
+
+    case 'whoami': print(userProfile.firstName.toLowerCase() || 'user'); break;
+
+    case 'hostname': print('term-' + (userProfile.firstName || 'user').toLowerCase()); break;
+
+    case 'date': print(new Date().toString()); break;
+
+    case 'cal': {
+      const now = new Date();
+      const month = now.toLocaleString('ru', { month: 'long' });
+      const year = now.getFullYear();
+      print(`   ${month} ${year}`);
+      print('Пн Вт Ср Чт Пт Сб Вс');
+      const firstDay = new Date(year, now.getMonth(), 1);
+      const lastDay = new Date(year, now.getMonth() + 1, 0);
+      let line = '  '.repeat(firstDay.getDay()) + ' 1';
+      for (let d = 2; d <= lastDay.getDate(); d++) {
+        const dayOfWeek = new Date(year, now.getMonth(), d).getDay();
+        line += (d < 10 ? '  ' : ' ') + d;
+        if (dayOfWeek === 0 && d < lastDay.getDate()) { print(line); line = ''; }
+      }
+      print(line);
+      break;
+    }
+
+    case 'uptime': {
+      const hours = Math.floor(Math.random() * 24);
+      const mins = Math.floor(Math.random() * 60);
+      print(` ${new Date().toLocaleTimeString()} up ${hours}:${mins.toString().padStart(2, '0')}, 1 user, load average: 0.${Math.floor(Math.random()*99)}, 0.${Math.floor(Math.random()*99)}, 0.${Math.floor(Math.random()*99)}`);
+      break;
+    }
+
+    case 'free': {
+      const total = 8192;
+      const used = Math.floor(Math.random() * 4000) + 1000;
+      const free = total - used;
+      print('              total        used        free      shared     buff/cache   available');
+      print(`Mem:        ${total}        ${used}        ${free}          64         ${Math.floor(free/2)}        ${free}`);
+      print(`Swap:       2048           0         2048`);
+      break;
+    }
+
+    case 'df': {
+      print('Файловая система     1K-блоков    Исполь    Доступно  Исполь%  Смонтировано в');
+      print('/dev/sda1              52428800    12345678    40083122     24%  /');
+      print('/dev/sdb1             104857600    45678901    59178699     44%  /home');
+      print('tmpfs                   4096000      123456     3972544      4%  /tmp');
+      break;
+    }
+
+    case 'du': {
+      const target = a1 || '.';
+      print(`${Math.floor(Math.random() * 1000)}\t${target}`);
+      break;
+    }
+
+    case 'top': {
+      print('top - ' + new Date().toLocaleTimeString() + ' up 1 day, 12:34, 1 user, load average: 0.52, 0.48, 0.44');
+      print('Tasks: 142 total,   1 running, 141 sleeping,   0 stopped,   0 zombie');
+      print('%Cpu(s):  12.5 us,  3.2 sy,  0.0 ni, 84.3 id,  0.0 wa,  0.0 hi,  0.0 si');
+      print('MiB Mem :   8192.0 total,   2048.0 free,   4096.0 used,   2048.0 buff');
+      br();
+      print('  PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND');
+      print('  101 root      20   0   12345  8192   4096 S   5.0   0.1   0:12.34 systemd');
+      print('  202 user      20   0   45678 16384   8192 R   3.2   0.2   1:23.45 bash');
+      print('  404 guard     20   0   99999 32768  16384 S   1.0   0.4   5:67.89 guard');
+      break;
+    }
+
+    case 'htop': {
+      print('  1[                           ]  2[====                       ]');
+      print('  3[====                       ]  4[====                       ]');
+      print('  5[===                        ]  6[===                        ]');
+      br();
+      print('  PID USER      PRI NI  VIRT    RES    SHR  CPU% MEM%   TIME+  Command');
+      print('    1 root       20  0  45678  12345   6789  2.5  0.1  0:12.34 /sbin/init');
+      print('  404 guard      20  0  99999  32768  16384  1.0  0.4  5:67.89 guard');
+      print('  202 ' + (userProfile.firstName || 'user').padEnd(10) + '20  0  23456   8192   4096  0.5  0.2  0:05.67 -bash');
+      break;
+    }
+
+    case 'ifconfig': {
+      print('eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500');
+      print('        inet 192.168.1.' + Math.floor(Math.random() * 254) + '  netmask 255.255.255.0  broadcast 192.168.1.255');
+      print('        inet6 fe80::' + Math.random().toString(16).substr(2, 16) + '  prefixlen 64  scopeid 0x20<link>');
+      print('        ether 00:1a:2b:3c:4d:' + Math.floor(Math.random() * 99) + '  txqueuelen 1000  (Ethernet)');
+      br();
+      print('lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536');
+      print('        inet 127.0.0.1  netmask 255.0.0.0');
+      print('        inet6 ::1  prefixlen 128  scopeid 0x10<host>');
+      break;
+    }
+
+    case 'ip': {
+      if (a1 === 'a' || a1 === 'addr') {
+        print('1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN');
+        print('    inet 127.0.0.1/8 scope host lo');
+        print('2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP');
+        print('    inet 192.168.1.' + Math.floor(Math.random() * 254) + '/24 brd 192.168.1.255 scope global eth0');
+      } else if (a1 === 'r' || a1 === 'route') {
+        print('default via 192.168.1.1 dev eth0');
+        print('192.168.1.0/24 dev eth0 proto kernel scope link src 192.168.1.' + Math.floor(Math.random() * 254));
+      } else {
+        print('ip: используйте ip addr или ip route', 'info');
+      }
+      break;
+    }
+
+    case 'netstat': {
+      print('Active Internet connections (w/o servers)');
+      print('Proto Recv-Q Send-Q Local Address           Foreign Address         State');
+      print('tcp        0      0 192.168.1.' + Math.floor(Math.random() * 254) + ':22    10.0.0.' + Math.floor(Math.random() * 254) + ':54321 ESTABLISHED');
+      print('tcp        0      0 127.0.0.1:3306          0.0.0.0:*               LISTEN');
+      print('udp        0      0 0.0.0.0:68              0.0.0.0:*');
+      break;
+    }
+
+    case 'ss': {
+      print('Netid  State   Recv-Q  Send-Q  Local Address:Port    Peer Address:Port');
+      print('tcp    LISTEN  0       128     0.0.0.0:22            0.0.0.0:*');
+      print('tcp    ESTAB   0       0       192.168.1.' + Math.floor(Math.random() * 254) + ':45678  10.0.0.' + Math.floor(Math.random() * 254) + ':80');
+      break;
+    }
+
+    case 'curl': {
+      if (!a1) { print('curl: укажите URL', 'warn'); break; }
+      print(`* Trying to connect to ${a1}...`);
+      print(`* Connected to ${a1}`);
+      print(`<!DOCTYPE html><html><head><title>${a1}</title></head><body><h1>Welcome to ${a1}</h1></body></html>`);
+      break;
+    }
+
+    case 'wget': {
+      if (!a1) { print('wget: укажите URL', 'warn'); break; }
+      const filename = a1.split('/').pop() || 'index.html';
+      print(`--${new Date().toISOString()}--  ${a1}`);
+      print(`Connecting to ${a1}... connected!`);
+      print(`HTTP request sent, awaiting response... 200 OK`);
+      print(`Saving to: '${filename}'`);
+      print(`${filename} 100%[===================>]  12.34K  --.-KB/s    in 0.1s`);
+      print(`'${filename}' saved [12634/12634]`);
+      break;
+    }
+
+    case 'scp': print(`scp: ${a1 || 'file'} copied to ${parts[2] || 'remote:'}`, 'ok'); break;
+    case 'rsync': print(`rsync: ${a1 || 'src/'} → ${parts[2] || 'dest/'}`, 'ok'); break;
+
+    case 'traceroute': {
+      print(`traceroute to ${a1 || 'example.com'} (93.184.216.34), 30 hops max, 60 byte packets`);
+      for (let i = 1; i <= 8; i++) {
+        print(` ${i}  192.168.1.${Math.floor(Math.random() * 254)}  ${Math.random() * 10} ms  ${Math.random() * 10} ms  ${Math.random() * 10} ms`);
+      }
+      break;
+    }
+
+    case 'nslookup': {
+      print(`Server:    8.8.8.8`);
+      print(`Address:   8.8.8.8#53`);
+      br();
+      print(`Non-authoritative answer:`);
+      print(`Name:    ${a1 || 'example.com'}`);
+      print(`Address: 93.184.216.34`);
+      break;
+    }
+
+    case 'dig': {
+      print(`; <<>> DiG 9.16.1 <<>> ${a1 || 'example.com'}`);
+      print(`;; global options: +cmd`);
+      print(`;; Got answer:`);
+      print(`;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: ${Math.floor(Math.random() * 65535)}`);
+      print(`;; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 1`);
+      br();
+      print(`;; ANSWER SECTION:`);
+      print(`${a1 || 'example.com'}.    3600    IN    A    93.184.216.34`);
+      break;
+    }
+
+    case 'host': {
+      print(`${a1 || 'example.com'} has address 93.184.216.34`);
+      print(`${a1 || 'example.com'} mail is handled by 10 mail.${a1 || 'example.com'}.`);
+      break;
+    }
+
+    case 'grep': {
+      if (!a1) { print('grep: укажите шаблон', 'warn'); break; }
+      const pattern = a1;
+      const fileArg = parts[2];
+      if (fileArg) {
+        const fp = resolvePath(fileArg);
+        if (FS[fp]?.type === 'file') {
+          const lines = FS[fp].content.split('\n');
+          const matched = lines.filter(l => l.includes(pattern));
+          if (matched.length) matched.forEach(l => print(l));
+          else print('(нет совпадений)', 'dim');
+        } else { print(`grep: ${fileArg}: файл не найден`, 'err'); }
+      }
+      break;
+    }
+
+    case 'find': {
+      const startPath = a1 || '.';
+      const nameIdx = parts.indexOf('-name');
+      const namePattern = nameIdx !== -1 ? parts[nameIdx + 1] : '*';
+      print('Найдено:');
+      Object.keys(FS).forEach(path => {
+        const name = path.split('/').pop();
+        if (path.startsWith(startPath === '.' ? currentPath : startPath)) {
+          if (namePattern === '*' || name.includes(namePattern.replace('*', ''))) {
+            print(path);
+          }
+        }
+      });
+      break;
+    }
+
+    case 'head': {
+      const fileArg = a1;
+      if (!fileArg) { print('head: укажите файл', 'warn'); break; }
+      const fp = resolvePath(fileArg);
+      if (FS[fp]?.type === 'file') {
+        const lines = FS[fp].content.split('\n').slice(0, 10);
+        lines.forEach(l => print(l));
+      } else { print(`head: ${fileArg}: файл не найден`, 'err'); }
+      break;
+    }
+
+    case 'tail': {
+      const fileArg = a1;
+      if (!fileArg) { print('tail: укажите файл', 'warn'); break; }
+      const fp = resolvePath(fileArg);
+      if (FS[fp]?.type === 'file') {
+        const lines = FS[fp].content.split('\n').slice(-10);
+        lines.forEach(l => print(l));
+      } else { print(`tail: ${fileArg}: файл не найден`, 'err'); }
+      break;
+    }
+
+    case 'wc': {
+      const fileArg = a1;
+      if (fileArg) {
+        const fp = resolvePath(fileArg);
+        if (FS[fp]?.type === 'file') {
+          const content = FS[fp].content;
+          const lines = content.split('\n').length;
+          const words = content.split(/\s+/).length;
+          const chars = content.length;
+          print(` ${lines} ${words} ${chars} ${fileArg}`);
+        } else { print(`wc: ${fileArg}: файл не найден`, 'err'); }
+      } else {
+        print('  0   0   0', 'dim');
+      }
+      break;
+    }
+
+    case 'sort': {
+      const fileArg = a1;
+      if (fileArg) {
+        const fp = resolvePath(fileArg);
+        if (FS[fp]?.type === 'file') {
+          const lines = FS[fp].content.split('\n').sort();
+          lines.forEach(l => print(l));
+        } else { print(`sort: ${fileArg}: файл не найден`, 'err'); }
+      }
+      break;
+    }
+
+    case 'uniq': {
+      const fileArg = a1;
+      if (fileArg) {
+        const fp = resolvePath(fileArg);
+        if (FS[fp]?.type === 'file') {
+          const lines = FS[fp].content.split('\n');
+          const unique = lines.filter((v, i, a) => a.indexOf(v) === i);
+          unique.forEach(l => print(l));
+        } else { print(`uniq: ${fileArg}: файл не найден`, 'err'); }
+      }
+      break;
+    }
+
+    case 'diff': {
+      if (!a1 || !parts[2]) { print('diff: diff <file1> <file2>', 'warn'); break; }
+      const fp1 = resolvePath(a1);
+      const fp2 = resolvePath(parts[2]);
+      if (FS[fp1]?.type === 'file' && FS[fp2]?.type === 'file') {
+        const lines1 = FS[fp1].content.split('\n');
+        const lines2 = FS[fp2].content.split('\n');
+        let hasDiff = false;
+        lines1.forEach((l, i) => {
+          if (l !== lines2[i]) {
+            print(`< ${l}`, 'info');
+            print(`> ${lines2[i] || ''}`, 'warn');
+            hasDiff = true;
+          }
+        });
+        if (!hasDiff) print('(файлы идентичны)', 'dim');
+      } else { print('diff: файл не найден', 'err'); }
+      break;
+    }
+
+    case 'cut': {
+      const fileArg = parts.find(p => p && !p.startsWith('-'));
+      if (fileArg) {
+        const fp = resolvePath(fileArg);
+        if (FS[fp]?.type === 'file') {
+          const lines = FS[fp].content.split('\n');
+          lines.forEach(l => print(l.split(/[\t,]/).map(f => f.trim()).join('  ')));
+        }
+      }
+      break;
+    }
+
+    case 'paste': print('(объединяет строки файлов)', 'dim'); break;
+    case 'tr': print('(транслитерация символов)', 'dim'); break;
+
+    case 'rev': {
+      const fileArg = a1;
+      if (fileArg) {
+        const fp = resolvePath(fileArg);
+        if (FS[fp]?.type === 'file') {
+          FS[fp].content.split('\n').forEach(l => print(l.split('').reverse().join('')));
+        }
+      }
+      break;
+    }
+
+    case 'tac': {
+      const fileArg = a1;
+      if (fileArg) {
+        const fp = resolvePath(fileArg);
+        if (FS[fp]?.type === 'file') {
+          FS[fp].content.split('\n').reverse().forEach(l => print(l));
+        }
+      }
+      break;
+    }
+
+    case 'tar': {
+      if (!a1) { print('tar: укажите опции и файл', 'warn'); break; }
+      if (a1.includes('c')) print(`tar: создан архив ${parts.find(p => !p.startsWith('-')) || 'archive.tar'}`, 'ok');
+      else if (a1.includes('x')) print(`tar: распакован архив`, 'ok');
+      else if (a1.includes('t')) print('archive.tar\n  file1.txt\n  file2.txt\n  data/', 'info');
+      else print('tar: используйте -c, -x, -t', 'info');
+      break;
+    }
+
+    case 'gzip': print(`gzip: ${a1 || 'file'} сжат`, 'ok'); break;
+    case 'gunzip': print(`gunzip: ${a1 || 'file.gz'} распакован`, 'ok'); break;
+    case 'zip': print(`zip: создан ${parts[2] || 'archive.zip'}`, 'ok'); break;
+    case 'unzip': print(`unzip: ${a1 || 'archive.zip'} распакован`, 'ok'); break;
+    case 'bzip2': print(`bzip2: ${a1 || 'file'} сжат`, 'ok'); break;
+
+    case 'chown': print(`chown: владелец изменён на ${parts[2] || 'user'}`, 'ok'); break;
+    case 'chgrp': print(`chgrp: группа изменена на ${parts[2] || 'users'}`, 'ok'); break;
+
+    case 'sudo': {
+      const actualCmd = parts.slice(1).join(' ');
+      if (actualCmd === 'su') { print('root@term:~# ', 'ok'); }
+      else { print('Permission denied.', 'err'); sfx('err'); }
+      break;
+    }
+
+    case 'su': print('root@term:~# ', 'ok'); break;
+    case 'who': print('user     tty1         2026-03-06 10:00'); break;
+
+    case 'w': {
+      print(' ' + new Date().toLocaleTimeString() + ' up 1 day, 12:34, 1 user, load average: 0.52, 0.48, 0.44');
+      print('USER     TTY      FROM             LOGIN@   IDLE   JCPU   PCPU WHAT');
+      print('user     tty1     -                10:00    1.00s  0.12s  0.05s -bash');
+      break;
+    }
+
+    case 'last': {
+      print('user     tty1         Fri Mar  6 10:00   still logged in');
+      print('reboot   system boot  5.15.0           Fri Mar  6 09:59   up 12:34');
+      break;
+    }
+
+    case 'groups': print('user : user sudo admin'); break;
+
+    case 'id': print(`uid=1000(${userProfile.firstName || 'user'}) gid=1000(${userProfile.firstName || 'user'}) groups=1000(${userProfile.firstName || 'user'}),4(adm),24(cdrom),27(sudo)`); break;
+
+    case 'passwd': print('passwd: пароль изменён', 'ok'); break;
+
+    case 'jobs': print('[1]+  Running    sleep 100 &', 'info'); break;
+    case 'bg': print('[1]+ продолжен', 'ok'); break;
+    case 'fg': print('sleep 100', 'info'); break;
+    case 'nohup': print(`nohup: ${parts.slice(1).join(' ')} запущен в фоне`, 'ok'); break;
+    case 'killall': print(`killall: процесс "${a1 || 'unknown"}" остановлен`, 'ok'); break;
+    case 'pgrep': print(`${Math.floor(Math.random() * 1000)}`, 'info'); break;
+    case 'pidof': print(`${Math.floor(Math.random() * 1000)}`, 'info'); break;
+
+    case 'which': print(`/usr/bin/${a1 || 'command'}`, 'info'); break;
+
+    case 'whereis': {
+      print(`${a1 || 'command'}: /usr/bin/${a1 || 'command'} /usr/share/man/man1/${a1 || 'command'}.1.gz`);
+      break;
+    }
+
+    case 'locate': {
+      const pattern = (a1 || '').toLowerCase();
+      const matches = ['/usr/bin/' + (a1 || 'cmd'), '/usr/share/doc/' + (a1 || 'cmd'), '/etc/' + (a1 || 'cmd') + '.conf'];
+      matches.forEach(m => { if (!pattern || m.toLowerCase().includes(pattern)) print(m); });
+      break;
+    }
+
+    case 'alias': {
+      if (!a1) {
+        print("alias l='ls -la'", 'info');
+        print("alias h='history'", 'info');
+        print("alias c='clear'", 'info');
+      } else {
+        print(`alias ${a1}='${parts.slice(2).join(' ') || 'command'}'`, 'ok');
+      }
+      break;
+    }
+
+    case 'unalias': print(`unalias: ${a1 || 'alias'} удалён`, 'ok'); break;
+    case 'export': print(`export: ${a1 || 'VAR'}=${parts[2] || 'value'}`, 'ok'); break;
+
+    case 'env': {
+      print(`USER=${userProfile.firstName || 'user'}`);
+      print(`HOME=/home/${userProfile.firstName || 'user'}`);
+      print('PATH=/usr/local/bin:/usr/bin:/bin');
+      print('SHELL=/bin/bash');
+      print('TERM=xterm-256color');
+      print(`HOSTNAME=term-${(userProfile.firstName || 'user').toLowerCase()}`);
+      break;
+    }
+
+    case 'set': print('bash: переменные окружения установлены', 'dim'); break;
+    case 'source': print(`source: ${a1 || 'file'} выполнен`, 'ok'); break;
+
+    case 'man': {
+      if (!a1) { print('man: укажите команду', 'warn'); break; }
+      print(`\x1b[1m${a1?.toUpperCase()}(1)\x1b[0m — Руководство пользователя`);
+      br();
+      print('ИМЯ');
+      print(`       ${a1} — эмуляция команды Linux`);
+      br();
+      print('СИНТАКСИС');
+      print(`       ${a1} [ОПЦИИ] [АРГУМЕНТЫ]`);
+      br();
+      print('ОПИСАНИЕ');
+      print(`       ${a1} — это эмулированная команда в Terminal Quest.`);
+      br();
+      print('-- Конец --', 'dim');
+      break;
+    }
+
+    case 'whatis': print(`${a1 || 'command'} - эмуляция Linux команды`, 'info'); break;
+    case 'apropos': print(`${a1 || 'keyword'}: man, help, info - справочная система`, 'info'); break;
+    case 'info': print(`Info page for ${a1 || 'command'}`, 'dim'); break;
+
+    case 'reboot': print('Система перезагружается...', 'warn'); break;
+    case 'shutdown': print('Система выключается...', 'warn'); break;
+    case 'halt': print('Система остановлена', 'warn'); break;
+    case 'poweroff': print('Питание отключено', 'warn'); break;
+
+    case 'mount': {
+      print('/dev/sda1 on / type ext4 (rw,relatime)');
+      print('/dev/sdb1 on /home type ext4 (rw,relatime)');
+      print('tmpfs on /tmp type tmpfs (rw,nosuid,nodev)');
+      break;
+    }
+
+    case 'umount': print(`umount: ${a1 || '/mnt'} размонтировано`, 'ok'); break;
+
+    case 'fdisk': {
+      print('Диск /dev/sda: 50 GiB, 53687091200 байт');
+      print('Единицы: секторы по 1 * 512 = 512 байт');
+      print('Размер сектора (логический/физический): 512 байт / 512 байт');
+      br();
+      print('Устр-во  Загрузочный Start     Sectors  Size Id Тип');
+      print('/dev/sda1    *         2048   102400000   50G 83 Linux');
+      break;
+    }
+
+    case 'mkfs': print(`mkfs: файловая система создана на ${a1 || '/dev/sdX'}`, 'ok'); break;
+    case 'fsck': print(`fsck: ${a1 || '/dev/sdX'} проверена, ошибок нет`, 'ok'); break;
+    case 'dd': print(`dd: ${parts[3] || '1'}+0 записей введено\n${parts[3] || '1'}+0 записей выведено`, 'ok'); break;
+
+    case 'ln': {
+      if (!a1 || !parts[2]) { print('ln: ln <target> <link>', 'warn'); break; }
+      print(`ln: создана ссылка ${parts[2]}`, 'ok');
+      break;
+    }
+
+    case 'readlink': print(`${a1 || 'link'} -> ${parts[2] || 'target'}`, 'info'); break;
 
     case 'history':
       if (a1 === '-c') { cmdHistory = []; print('История очищена.', 'ok'); }

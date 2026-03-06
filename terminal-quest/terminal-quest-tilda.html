@@ -1,0 +1,1894 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terminal Quest v2.7 - Linux Simulator</title>
+  <script type="text/javascript" nonce="7a29e170c76e4aa38b46e13a216" src="//local.adguard.org?ts=1772812562005&amp;type=content-script&amp;dmn=chat.z.ai&amp;url=https%3A%2F%2Fchat.z.ai%2Fapi%2Fv1%2Fstorage%2Fversions%2F360ca72e-e28b-4abf-a0c3-d94906f6321d%2Ffile%3Fpath%3Ddownload%252Fterminal-quest-v2.7.html&amp;app=chrome.exe&amp;css=3&amp;js=1&amp;rel=1&amp;rji=1&amp;sbe=1&amp;stealth=1&amp;st-wrtc&amp;st-push&amp;st-loc&amp;st-ref=aHR0cHM6Ly9jaGF0LnouYWkv&amp;st-dnt"></script><script type="text/javascript" nonce="7a29e170c76e4aa38b46e13a216" src="//local.adguard.org?ts=1772812562005&amp;name=AdGuard%20Assistant&amp;name=AdGuard%20Extra&amp;name=AdGuard%20Popup%20Blocker&amp;name=Web%20of%20Trust&amp;type=user-script"></script><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<!-- TERMINAL QUEST v2.7 - Улучшенный дизайн -->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    background: #030712;
+    min-height: 100vh;
+    padding: 16px;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+  
+  #tq-widget {
+    max-width: 1100px;
+    margin: 0 auto;
+    --bg: #0a0f1a;
+    --bg-terminal: #0d1321;
+    --bg-panel: #111827;
+    --bg-card: #1a2234;
+    --text: #e2e8f0;
+    --text-dim: #64748b;
+    --prompt: #22d3ee;
+    --accent: #6366f1;
+    --accent-purple: #a855f7;
+    --accent-green: #10b981;
+    --accent-orange: #f59e0b;
+    --accent-pink: #ec4899;
+    --border: #1e293b;
+    --border-light: #334155;
+    --glow-blue: rgba(99, 102, 241, 0.15);
+    --glow-cyan: rgba(34, 211, 238, 0.1);
+  }
+
+  /* === LAYOUT: Terminal Left + Sidebar Right === */
+  .tq-layout {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 16px;
+    align-items: start;
+  }
+  
+  /* === TERMINAL CONTAINER === */
+  .tq-terminal-wrap {
+    background: var(--bg-terminal);
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    box-shadow: 
+      0 0 0 1px rgba(255,255,255,0.03),
+      0 20px 40px -10px rgba(0,0,0,0.5),
+      0 0 60px -20px var(--glow-cyan);
+  }
+
+  /* Top Bar */
+  .tq-topbar {
+    background: linear-gradient(180deg, var(--bg-panel) 0%, var(--bg-terminal) 100%);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  
+  .tq-dots { display: flex; gap: 6px; }
+  .tq-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .tq-dot.red { background: #ef4444; }
+  .tq-dot.yellow { background: #eab308; }
+  .tq-dot.green { background: #22c55e; }
+  
+  .tq-level-badge {
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-purple) 100%);
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .tq-mission {
+    flex: 1;
+    font-size: 12px;
+    color: var(--text-dim);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .tq-progress-bar {
+    width: 80px;
+    height: 3px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .tq-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-green) 0%, var(--prompt) 100%);
+    border-radius: 3px;
+    transition: width 0.4s ease;
+  }
+  
+  .tq-sound-btn {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all 0.2s;
+  }
+  .tq-sound-btn:hover { 
+    background: var(--bg-card); 
+    color: var(--prompt); 
+  }
+
+  /* Stats Row */
+  .tq-stats-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 8px 16px;
+    background: rgba(0,0,0,0.2);
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+  }
+  
+  .tq-stat {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .tq-stat-label { color: var(--text-dim); }
+  .tq-stat-value { color: var(--prompt); font-weight: 600; }
+  
+  .tq-rank {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    background: var(--bg-card);
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+  .tq-rank-icon { font-size: 12px; }
+  .tq-rank-name { color: var(--accent-orange); font-weight: 500; }
+
+  /* Terminal Output */
+  .tq-terminal {
+    min-height: 380px;
+    max-height: 420px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  
+  .tq-crt {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2;
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(0,0,0,0.03) 0px,
+      rgba(0,0,0,0.03) 1px,
+      transparent 1px,
+      transparent 2px
+    );
+  }
+  
+  .tq-terminal::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.4) 100%);
+  }
+  
+  .tq-output {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-word;
+    position: relative;
+    z-index: 1;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .tq-output::-webkit-scrollbar { width: 4px; }
+  .tq-output::-webkit-scrollbar-track { background: transparent; }
+  .tq-output::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* Input Row */
+  .tq-input-row {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    background: rgba(0,0,0,0.3);
+    position: relative;
+    z-index: 1;
+  }
+  
+  .tq-prompt {
+    color: var(--prompt);
+    font-weight: 600;
+    margin-right: 8px;
+    font-size: 12px;
+    text-shadow: 0 0 8px var(--glow-cyan);
+  }
+  
+  .tq-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-family: inherit;
+    font-size: 12px;
+    color: var(--text);
+    caret-color: var(--prompt);
+  }
+  .tq-input::placeholder { color: var(--text-dim); }
+
+  /* Combo Indicator */
+  .tq-combo {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent-orange) 0%, var(--accent-pink) 100%);
+    color: #fff;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all 0.2s;
+    z-index: 10;
+  }
+  .tq-combo.active { opacity: 1; transform: scale(1); }
+
+  /* Timer */
+  .tq-timer {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    background: rgba(99, 102, 241, 0.2);
+    color: #a5b4fc;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    z-index: 10;
+  }
+
+  /* === SIDEBAR === */
+  .tq-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* Hint Panel */
+  .tq-hint-panel {
+    background: var(--bg-panel);
+    border-radius: 12px;
+    padding: 12px;
+    border: 1px solid var(--border);
+  }
+  .tq-hint-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .tq-hint-icon {
+    font-size: 16px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-purple) 100%);
+    border-radius: 6px;
+  }
+  .tq-hint-info { flex: 1; }
+  .tq-hint-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-dim);
+    font-weight: 600;
+  }
+  .tq-hint-meta {
+    display: flex;
+    gap: 8px;
+    margin-top: 2px;
+    font-size: 9px;
+  }
+  .tq-hint-category { color: var(--accent-purple); }
+  .tq-hint-difficulty { color: var(--accent-orange); }
+  .tq-hint-text {
+    font-size: 10px;
+    color: var(--text);
+    line-height: 1.5;
+    margin-bottom: 8px;
+  }
+  .tq-hint-cmd {
+    font-size: 10px;
+    color: var(--prompt);
+    background: rgba(0,0,0,0.3);
+    padding: 6px 10px;
+    border-radius: 6px;
+    display: inline-block;
+  }
+
+  /* Daily Panel */
+  .tq-daily-panel {
+    background: var(--bg-panel);
+    border-radius: 12px;
+    padding: 12px;
+    border: 1px solid var(--border);
+  }
+  .tq-daily-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .tq-streak-badge {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    background: linear-gradient(135deg, var(--accent-orange) 0%, var(--accent-pink) 100%);
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #fff;
+  }
+  .tq-streak-badge.inactive {
+    background: var(--bg-card);
+    color: var(--text-dim);
+  }
+  .tq-daily-title {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--accent-green);
+    font-weight: 600;
+  }
+  .tq-tasks-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .tq-task-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    background: var(--bg-card);
+    border-radius: 6px;
+    font-size: 9px;
+    transition: background 0.2s;
+  }
+  .tq-task-item:hover { background: rgba(255,255,255,0.05); }
+  .tq-task-item.completed { background: rgba(16, 185, 129, 0.1); }
+  .tq-task-icon { font-size: 12px; }
+  .tq-task-info { flex: 1; min-width: 0; }
+  .tq-task-name { color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tq-task-progress { color: var(--text-dim); margin-top: 1px; }
+  .tq-task-bar {
+    width: 100%;
+    height: 2px;
+    background: var(--border);
+    border-radius: 1px;
+    margin-top: 3px;
+    overflow: hidden;
+  }
+  .tq-task-fill {
+    height: 100%;
+    background: var(--accent-green);
+    border-radius: 1px;
+  }
+  .tq-task-xp { color: var(--accent-orange); font-weight: 600; }
+
+  /* Progress Panel */
+  .tq-progress-panel {
+    background: var(--bg-panel);
+    border-radius: 12px;
+    padding: 12px;
+    border: 1px solid var(--border);
+  }
+  .tq-progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .tq-progress-title {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--accent-purple);
+    font-weight: 600;
+  }
+  .tq-progress-total { font-size: 10px; color: var(--text); font-weight: 500; }
+  .tq-category-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+  }
+  .tq-category-icon { font-size: 12px; }
+  .tq-category-info { flex: 1; }
+  .tq-category-name { font-size: 9px; color: var(--text); }
+  .tq-category-bar {
+    width: 100%;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 3px;
+    overflow: hidden;
+  }
+  .tq-category-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+  .tq-category-count { font-size: 9px; color: var(--text-dim); }
+
+  /* Leaderboard Panel */
+  .tq-leaderboard-panel {
+    background: var(--bg-panel);
+    border-radius: 12px;
+    padding: 12px;
+    border: 1px solid var(--border);
+  }
+  .tq-leaderboard-title {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--accent-pink);
+    font-weight: 600;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .tq-leaderboard-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+    font-size: 10px;
+  }
+  .tq-lb-rank {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 700;
+    background: var(--bg-card);
+    color: var(--text-dim);
+  }
+  .tq-lb-rank.gold { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #000; }
+  .tq-lb-rank.silver { background: linear-gradient(135deg, #9ca3af, #6b7280); color: #fff; }
+  .tq-lb-rank.bronze { background: linear-gradient(135deg, #d97706, #b45309); color: #fff; }
+  .tq-lb-name { flex: 1; color: var(--text); }
+  .tq-lb-score { color: var(--accent-orange); font-weight: 600; }
+
+  /* Music Bar */
+  .tq-music-bar {
+    background: var(--bg-panel);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-top: 12px;
+    display: none;
+    border: 1px solid var(--border);
+  }
+  .tq-music-inner { display: flex; align-items: center; gap: 10px; }
+  .tq-track-info { flex: 1; min-width: 0; }
+  .tq-track-name { font-size: 11px; color: var(--text); font-weight: 500; }
+  .tq-track-artist { font-size: 9px; color: var(--text-dim); margin-top: 2px; }
+  .tq-variation { 
+    font-size: 8px;
+    background: var(--bg-card);
+    padding: 1px 6px;
+    border-radius: 4px;
+    color: var(--accent-purple);
+  }
+  .tq-player-btns { display: flex; gap: 4px; }
+  .tq-player-btn {
+    width: 26px; height: 26px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 10px;
+    transition: all 0.2s;
+  }
+  .tq-player-btn:hover { background: var(--bg-card); color: var(--text); }
+
+  /* Achievement Popup */
+  .tq-achievement-popup {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    background: var(--bg-panel);
+    border: 2px solid var(--accent-green);
+    border-radius: 12px;
+    padding: 16px 20px;
+    z-index: 10000;
+    transform: translateX(400px);
+    transition: transform 0.4s ease;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    max-width: 280px;
+  }
+  .tq-achievement-popup.show { transform: translateX(0); }
+  .tq-achievement-header { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+  .tq-achievement-icon { font-size: 28px; }
+  .tq-achievement-title { color: var(--accent-green); font-size: 9px; text-transform: uppercase; letter-spacing: 1px; }
+  .tq-achievement-name { color: var(--text); font-size: 14px; font-weight: 600; }
+  .tq-achievement-desc { color: var(--text-dim); font-size: 11px; }
+
+  /* Quiz Panel */
+  .tq-quiz-panel {
+    background: var(--bg-panel);
+    border-radius: 12px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    display: none;
+  }
+  .tq-quiz-title {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--accent-pink);
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+  .tq-quiz-question { font-size: 11px; color: var(--text); margin-bottom: 10px; line-height: 1.5; }
+  .tq-quiz-options { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .tq-quiz-option {
+    padding: 8px 10px;
+    border-radius: 6px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .tq-quiz-option:hover { border-color: var(--accent-pink); }
+  .tq-quiz-option.correct { background: rgba(16, 185, 129, 0.2); border-color: var(--accent-green); color: #34d399; }
+  .tq-quiz-option.wrong { background: rgba(239, 68, 68, 0.2); border-color: #ef4444; color: #f87171; }
+
+  /* Tutorial Overlay */
+  .tq-tutorial-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 10001;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .tq-tutorial-box {
+    background: var(--bg-panel);
+    border: 2px solid var(--accent);
+    border-radius: 16px;
+    padding: 24px;
+    max-width: 440px;
+    width: 100%;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+  }
+  .tq-tutorial-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .tq-tutorial-text {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.7;
+    margin-bottom: 16px;
+  }
+  .tq-tutorial-text strong { color: var(--text); }
+  .tq-tutorial-text code {
+    background: var(--bg-card);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--prompt);
+    font-family: inherit;
+  }
+  .tq-tutorial-buttons { display: flex; gap: 8px; justify-content: flex-end; }
+  .tq-tutorial-btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tq-tutorial-btn.primary {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-purple) 100%);
+    color: #fff;
+    border: none;
+  }
+  .tq-tutorial-btn.primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px var(--glow-blue); }
+  .tq-tutorial-btn.secondary {
+    background: transparent;
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+  }
+  .tq-tutorial-btn.secondary:hover { background: var(--bg-card); color: var(--text); }
+
+  /* Confetti */
+  .tq-confetti {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+    overflow: hidden;
+  }
+  .tq-confetti-piece {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    animation: confetti-fall 3s ease-out forwards;
+  }
+  @keyframes confetti-fall {
+    0% { transform: translateY(-100%) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+  }
+
+  /* Snake Controls */
+  .tq-snake-controls {
+    display: none;
+    margin-top: 10px;
+  }
+  .tq-snake-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 44px);
+    grid-template-rows: repeat(2, 44px);
+    gap: 4px;
+    justify-content: center;
+  }
+  .tq-snake-btn {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.15s;
+  }
+  .tq-snake-btn:hover { background: var(--bg-panel); transform: scale(0.95); }
+  .tq-snake-quit {
+    margin-top: 8px;
+    padding: 6px 16px;
+    border-radius: 6px;
+    border: 1px solid #ef4444;
+    color: #ef4444;
+    background: transparent;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11px;
+  }
+  .tq-snake-quit:hover { background: rgba(239, 68, 68, 0.1); }
+
+  /* Animations */
+  @keyframes tq-success-flash {
+    0% { box-shadow: inset 0 0 20px rgba(16, 185, 129, 0.4); }
+    100% { box-shadow: inset 0 0 0 transparent; }
+  }
+  @keyframes tq-error-flash {
+    0% { box-shadow: inset 0 0 20px rgba(239, 68, 68, 0.4); }
+    100% { box-shadow: inset 0 0 0 transparent; }
+  }
+  .tq-terminal.success-flash { animation: tq-success-flash 0.4s ease-out; }
+  .tq-terminal.error-flash { animation: tq-error-flash 0.4s ease-out; }
+
+  /* Responsive */
+  @media (max-width: 800px) {
+    .tq-layout {
+      grid-template-columns: 1fr;
+    }
+    .tq-sidebar {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .tq-hint-panel { grid-column: span 2; }
+  }
+  
+  @media (max-width: 500px) {
+    body { padding: 8px; }
+    .tq-sidebar { grid-template-columns: 1fr; }
+    .tq-hint-panel { grid-column: span 1; }
+    .tq-terminal { min-height: 300px; max-height: 350px; }
+    .tq-stats-row { flex-wrap: wrap; gap: 8px; }
+  }
+
+  /* 13 Themes */
+  .tq-theme-default { --bg: #0a0f1a; --bg-terminal: #0d1321; --bg-panel: #111827; --bg-card: #1a2234; --text: #e2e8f0; --text-dim: #64748b; --prompt: #22d3ee; --accent: #6366f1; --border: #1e293b; --border-light: #334155; --glow-blue: rgba(99, 102, 241, 0.15); --glow-cyan: rgba(34, 211, 238, 0.1); }
+  .tq-theme-matrix { --bg: #000; --bg-terminal: #000; --bg-panel: #001100; --bg-card: #002200; --text: #00ff41; --text-dim: #005500; --prompt: #00ff41; --accent: #00ff41; --border: #003300; --border-light: #004400; --glow-blue: rgba(0, 255, 65, 0.15); --glow-cyan: rgba(0, 255, 65, 0.1); }
+  .tq-theme-amber { --bg: #1a1004; --bg-terminal: #120b00; --bg-panel: #2d1810; --bg-card: #3d2010; --text: #ffb000; --text-dim: #805300; --prompt: #ff8c00; --accent: #ff8c00; --border: #4d3300; --border-light: #6d4400; --glow-blue: rgba(255, 176, 0, 0.15); --glow-cyan: rgba(255, 140, 0, 0.1); }
+  .tq-theme-light { --bg: #f1f5f9; --bg-terminal: #ffffff; --bg-panel: #f8fafc; --bg-card: #e2e8f0; --text: #1e293b; --text-dim: #64748b; --prompt: #059669; --accent: #3b82f6; --border: #cbd5e1; --border-light: #94a3b8; --glow-blue: rgba(59, 130, 246, 0.1); --glow-cyan: rgba(5, 150, 105, 0.1); }
+  .tq-theme-ocean { --bg: #0a192f; --bg-terminal: #0d2137; --bg-panel: #112240; --bg-card: #1a365d; --text: #ccd6f6; --text-dim: #8892b0; --prompt: #64ffda; --accent: #64ffda; --border: #1e3a5f; --border-light: #2d4a6f; --glow-blue: rgba(100, 255, 218, 0.15); --glow-cyan: rgba(100, 255, 218, 0.1); }
+  .tq-theme-sunset { --bg: #1a0a0a; --bg-terminal: #1f0f0f; --bg-panel: #2d1515; --bg-card: #3d1a1a; --text: #ffcccb; --text-dim: #8b5a5a; --prompt: #ff6b6b; --accent: #ff8c42; --border: #4a2020; --border-light: #6a3030; --glow-blue: rgba(255, 107, 107, 0.15); --glow-cyan: rgba(255, 140, 66, 0.1); }
+  .tq-theme-forest { --bg: #0d1a0d; --bg-terminal: #0f1f0f; --bg-panel: #152415; --bg-card: #1a301a; --text: #90ee90; --text-dim: #4a7c4a; --prompt: #32cd32; --accent: #98fb98; --border: #2d4a2d; --border-light: #3d5a3d; --glow-blue: rgba(50, 205, 50, 0.15); --glow-cyan: rgba(152, 251, 152, 0.1); }
+  .tq-theme-purple { --bg: #1a1025; --bg-terminal: #1f0f2f; --bg-panel: #2d1b3d; --bg-card: #3d204d; --text: #e0b0ff; --text-dim: #8b5a8b; --prompt: #bf7fff; --accent: #9370db; --border: #4a2d5c; --border-light: #5a3d6c; --glow-blue: rgba(147, 112, 219, 0.15); --glow-cyan: rgba(191, 127, 255, 0.1); }
+  .tq-theme-dracula { --bg: #282a36; --bg-terminal: #282a36; --bg-panel: #21222c; --bg-card: #343746; --text: #f8f8f2; --text-dim: #6272a4; --prompt: #50fa7b; --accent: #bd93f9; --border: #44475a; --border-light: #5a5d7a; --glow-blue: rgba(189, 147, 249, 0.15); --glow-cyan: rgba(80, 250, 123, 0.1); }
+  .tq-theme-nord { --bg: #2e3440; --bg-terminal: #2e3440; --bg-panel: #3b4252; --bg-card: #434c5e; --text: #eceff4; --text-dim: #7b88a1; --prompt: #a3be8c; --accent: #88c0d0; --border: #4c566a; --border-light: #5c667a; --glow-blue: rgba(136, 192, 208, 0.15); --glow-cyan: rgba(163, 190, 140, 0.1); }
+  .tq-theme-hacker { --bg: #000; --bg-terminal: #000; --bg-panel: #0a0a0a; --bg-card: #0f0f0f; --text: #0f0; --text-dim: #090; --prompt: #0f0; --accent: #0f0; --border: #030; --border-light: #040; --glow-blue: rgba(0, 255, 0, 0.2); --glow-cyan: rgba(0, 255, 0, 0.15); }
+  .tq-theme-gruvbox { --bg: #282828; --bg-terminal: #282828; --bg-panel: #3c3836; --bg-card: #504945; --text: #ebdbb2; --text-dim: #928374; --prompt: #b8bb26; --accent: #fe8019; --border: #504945; --border-light: #665c54; --glow-blue: rgba(254, 128, 25, 0.15); --glow-cyan: rgba(184, 187, 38, 0.1); }
+  .tq-theme-monokai { --bg: #272822; --bg-terminal: #272822; --bg-panel: #1e1f1c; --bg-card: #3e3d32; --text: #f8f8f2; --text-dim: #75715e; --prompt: #a6e22e; --accent: #66d9ef; --border: #3e3d32; --border-light: #4e4d42; --glow-blue: rgba(102, 217, 239, 0.15); --glow-cyan: rgba(166, 226, 46, 0.1); }
+</style>
+
+<div id="tq-widget">
+  <div class="tq-layout">
+    <!-- TERMINAL (Left) -->
+    <div class="tq-terminal-wrap tq-theme-default" id="tqContainer">
+      <div class="tq-topbar">
+        <div class="tq-dots">
+          <div class="tq-dot red"></div>
+          <div class="tq-dot yellow"></div>
+          <div class="tq-dot green"></div>
+        </div>
+        <span class="tq-level-badge" id="lvlBadge">LVL 1</span>
+        <span class="tq-mission" id="missionTxt">Загрузка...</span>
+        <div class="tq-progress-bar">
+          <div class="tq-progress-fill" id="progFill" style="width: 0%;"></div>
+        </div>
+        <button class="tq-sound-btn" id="muteBtn" title="Звук">🔊</button>
+      </div>
+      
+      <div class="tq-stats-row">
+        <div class="tq-stat">
+          <span class="tq-stat-label">XP:</span>
+          <span class="tq-stat-value" id="xpDisplay">0</span>
+        </div>
+        <div class="tq-rank">
+          <span class="tq-rank-icon" id="rankIcon">🌱</span>
+          <span class="tq-rank-name" id="rankName">Новичок</span>
+        </div>
+        <div class="tq-stat">
+          <span class="tq-stat-label">Команд:</span>
+          <span class="tq-stat-value" id="cmdCount">0</span>
+        </div>
+        <div class="tq-stat">
+          <span class="tq-stat-label">Достижений:</span>
+          <span class="tq-stat-value" id="achCount">0/25</span>
+        </div>
+      </div>
+      
+      <div class="tq-terminal" id="terminal">
+        <div class="tq-crt"></div>
+        <div class="tq-combo" id="comboIndicator">COMBO x2</div>
+        <div class="tq-timer" id="speedrunTimer">⏱️ 00:00</div>
+        <div class="tq-output" id="output"></div>
+        <div class="tq-input-row">
+          <span class="tq-prompt" id="promptEl">user@tq:~$</span>
+          <input class="tq-input" id="cmdInput" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="введите команду…">
+        </div>
+      </div>
+    </div>
+
+    <!-- SIDEBAR (Right) -->
+    <div class="tq-sidebar">
+      <!-- Hint -->
+      <div class="tq-hint-panel" id="hintBar">
+        <div class="tq-hint-header">
+          <span class="tq-hint-icon" id="hintIcon">💡</span>
+          <div class="tq-hint-info">
+            <span class="tq-hint-label">Подсказка</span>
+            <div class="tq-hint-meta">
+              <span class="tq-hint-category" id="hintCategory"></span>
+              <span class="tq-hint-difficulty" id="hintDifficulty"></span>
+            </div>
+          </div>
+        </div>
+        <div class="tq-hint-text" id="hintText">Загрузка...</div>
+        <div class="tq-hint-cmd" id="hintCmd"></div>
+      </div>
+
+      <!-- Daily Tasks -->
+      <div class="tq-daily-panel">
+        <div class="tq-daily-header">
+          <span class="tq-daily-title">Ежедневные задания</span>
+          <div class="tq-streak-badge" id="streakBadge">
+            <span>🔥</span>
+            <span id="streakCount">0</span>
+          </div>
+        </div>
+        <div class="tq-tasks-grid" id="tasksGrid"></div>
+      </div>
+
+      <!-- Progress -->
+      <div class="tq-progress-panel">
+        <div class="tq-progress-header">
+          <span class="tq-progress-title">Прогресс обучения</span>
+          <span class="tq-progress-total" id="progressTotal">0/40</span>
+        </div>
+        <div id="categoryProgress"></div>
+      </div>
+
+      <!-- Leaderboard -->
+      <div class="tq-leaderboard-panel">
+        <div class="tq-leaderboard-title">🏆 Таблица рекордов</div>
+        <div id="leaderboardList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Music Bar -->
+  <div class="tq-music-bar" id="musicBar">
+    <div class="tq-music-inner">
+      <span style="font-size: 16px;">🎵</span>
+      <div class="tq-track-info">
+        <div class="tq-track-name" id="trackName">Загрузка...</div>
+        <div class="tq-track-artist" id="trackArtist">Synth <span class="tq-variation" id="variationBadge">Var 1</span></div>
+      </div>
+      <div class="tq-player-btns">
+        <button class="tq-player-btn" id="prevTrack">⏮</button>
+        <button class="tq-player-btn" id="playPauseBtn">⏸</button>
+        <button class="tq-player-btn" id="nextTrack">⏭</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Achievement Popup -->
+<div class="tq-achievement-popup" id="achievementPopup">
+  <div class="tq-achievement-header">
+    <span class="tq-achievement-icon" id="achievementIcon">🏆</span>
+    <div>
+      <div class="tq-achievement-title">Достижение</div>
+      <div class="tq-achievement-name" id="achievementName"></div>
+    </div>
+  </div>
+  <div class="tq-achievement-desc" id="achievementDesc"></div>
+</div>
+
+<!-- Tutorial Overlay -->
+<div class="tq-tutorial-overlay" id="tutorialOverlay">
+  <div class="tq-tutorial-box">
+    <div class="tq-tutorial-title">👋 Добро пожаловать в Terminal Quest</div>
+    <div class="tq-tutorial-text">
+      Это интерактивный тренажёр для изучения <strong>Linux команд</strong>.<br><br>
+      📌 Ваша цель — выполнять команды для прохождения уровней.<br>
+      💡 Подсказка всегда видна справа.<br>
+      ⌨️ Используйте <code>TAB</code> для автодополнения команд.<br>
+      🎵 Включите музыку командой <code>music cyber</code>.<br><br>
+      Готовы начать приключение?
+    </div>
+    <div class="tq-tutorial-buttons">
+      <button class="tq-tutorial-btn secondary" onclick="document.getElementById('tutorialOverlay').style.display='none'">Пропустить</button>
+      <button class="tq-tutorial-btn primary" id="startTutorialBtn">Начать</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confetti -->
+<div class="tq-confetti" id="confettiContainer"></div>
+
+<script>
+(function() {
+'use strict';
+
+// ============================================================
+// CONFIG & STATE
+// ============================================================
+const SETTINGS_KEY = 'tq_settings_v3';
+const PROFILE_KEY = 'tq_profile_v3';
+const FS_KEY = 'tq_fs_v3';
+const SAVE_KEY = 'tq_save_v3';
+const STATS_KEY = 'tq_stats_v3';
+const ACHIEVEMENTS_KEY = 'tq_achievements_v3';
+const DAILY_KEY = 'tq_daily_v3';
+
+const defaultSettings = { theme: 'default', music: 'cyber' };
+const defaultProfile = { firstName: 'User', lastName: '', bio: 'Новичок.' };
+const defaultStats = {
+  commandsExecuted: 0, levelsCompleted: 0, snakeHighScore: 0, xp: 0,
+  hintsUsed: 0, filesCreated: 0, easterEggsFound: [], streak: 0,
+  lastPlayedDate: null, dailyTasksCompleted: 0, totalPlayTime: 0
+};
+
+// Daily Tasks
+const DAILY_TASKS = [
+  { id: 'complete_3_levels', name: 'Пройти 3 уровня', target: 3, xp: 50, icon: '🎯' },
+  { id: 'use_10_commands', name: '10 команд', target: 10, xp: 30, icon: '⌨️' },
+  { id: 'try_new_theme', name: 'Новая тема', target: 1, xp: 20, icon: '🎨' },
+  { id: 'play_snake', name: 'Сыграть в змейку', target: 1, xp: 25, icon: '🐍' },
+  { id: 'use_hint', name: 'Подсказка', target: 1, xp: 15, icon: '💡' },
+  { id: 'no_errors', name: 'Без ошибок 5 команд', target: 5, xp: 40, icon: '✨' }
+];
+
+let dailyProgress = {};
+let sessionStartTime = Date.now();
+let consecutiveErrors = 0;
+let settings = safeLoad(SETTINGS_KEY, defaultSettings);
+let userProfile = safeLoad(PROFILE_KEY, defaultProfile);
+let FS = safeLoad(FS_KEY, buildDefaultFS());
+let currentLevel = parseInt(localStorage.getItem(SAVE_KEY) || '0');
+let currentPath = '/user';
+let cmdHistory = [];
+let histIdx = -1;
+let isSandbox = false;
+let isEditMode = false;
+let editStep = 0;
+let snakeActive = false;
+let snakeTimer = null;
+let stats = safeLoad(STATS_KEY, defaultStats);
+let achievements = safeLoad(ACHIEVEMENTS_KEY, getDefaultAchievements());
+let usedCommands = new Set();
+let comboCount = 0;
+let comboTimer = null;
+let lastCommandTime = 0;
+const COMBO_TIMEOUT = 5000;
+let speedrunStartTime = null;
+let speedrunTimerInterval = null;
+let speedrunActive = false;
+let levelCompletionTimes = [];
+let currentQuizIndex = 0;
+let quizScore = 0;
+let quizActive = false;
+
+function safeLoad(key, def) { try { return JSON.parse(localStorage.getItem(key)) || def; } catch { return def; } }
+function safeSave(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }
+
+function getDefaultAchievements() {
+  return [
+    { id: 'first_command', name: 'Первые шаги', description: 'Выполнить первую команду', icon: '🚀', unlocked: false },
+    { id: 'navigator', name: 'Навигатор', description: 'Пройти уровни навигации (1-8)', icon: '🧭', unlocked: false },
+    { id: 'file_master', name: 'Мастер файлов', description: 'Пройти уровни файлов (9-18)', icon: '📁', unlocked: false },
+    { id: 'system_admin', name: 'Сисадмин', description: 'Пройти системные уровни (19-26)', icon: '⚙️', unlocked: false },
+    { id: 'network_pro', name: 'Сетевой профи', description: 'Пройти сетевые уровни (27-32)', icon: '🌐', unlocked: false },
+    { id: 'hacker', name: 'Хакер', description: 'Пройти продвинутые уровни (33-40)', icon: '🕶️', unlocked: false },
+    { id: 'snake_master', name: 'Мастер змейки', description: 'Набрать 100+ очков', icon: '🐍', unlocked: false },
+    { id: 'music_lover', name: 'Меломан', description: 'Послушать музыку', icon: '🎵', unlocked: false },
+    { id: 'explorer', name: 'Исследователь', description: 'Использовать 20+ команд', icon: '🔍', unlocked: false },
+    { id: 'completionist', name: 'Перфекционист', description: 'Пройти все 40 уровней', icon: '💎', unlocked: false },
+    { id: 'night_owl', name: 'Ночная смена', description: 'Играть после полуночи', icon: '🦉', unlocked: false },
+    { id: 'theme_changer', name: 'Дизайнер', description: 'Попробовать 3 темы', icon: '🎨', unlocked: false },
+    { id: 'dedicated', name: 'Преданный', description: 'Выполнить 50 команд', icon: '💪', unlocked: false },
+    { id: 'easter_hunter', name: 'Охотник за яйцами', description: 'Найти 3 секрета', icon: '🥚', unlocked: false },
+    { id: 'dangerous', name: 'Опасный', description: 'Попробовать rm -rf /', icon: '💀', unlocked: false },
+    { id: 'cowboy', name: 'Ковбой', description: 'Использовать cowsay', icon: '🐄', unlocked: false },
+    { id: 'legend', name: 'Легенда', description: 'Максимальный ранг', icon: '🏆', unlocked: false },
+    { id: 'speedrun', name: 'Спидраннер', description: 'Быстро пройти 5 уровней', icon: '⚡', unlocked: false },
+    { id: 'help_seeker', name: 'Любознательный', description: 'Использовать help 3 раза', icon: '📖', unlocked: false },
+    { id: 'xp_master', name: 'Мастер XP', description: 'Набрать 3000 XP', icon: '⭐', unlocked: false }
+  ];
+}
+
+function buildDefaultFS() {
+  return {
+    '/': { type:'dir', children:['training','docs','logs','system','user','etc','home','var','tmp'] },
+    '/training': { type:'dir', children:['readme.txt','basics','advanced'] },
+    '/training/readme.txt': { type:'file', content:'Welcome to Terminal Quest!\n\nЭто интерактивный тренажёр для изучения Linux команд.\n\nОсновные команды:\n- pwd - показать текущую директорию\n- ls - список файлов\n- cd - сменить директорию\n- cat - прочитать файл' },
+    '/training/basics': { type:'dir', children:['lesson1.txt','lesson2.txt'] },
+    '/training/basics/lesson1.txt': { type:'file', content:'Урок 1: Навигация\n\npwd - print working directory\nls - list files\ncd - change directory' },
+    '/training/basics/lesson2.txt': { type:'file', content:'Урок 2: Работа с файлами\n\ntouch - создать файл\nmkdir - создать папку\nrm - удалить' },
+    '/training/advanced': { type:'dir', children:['networking.txt','permissions.txt'] },
+    '/training/advanced/networking.txt': { type:'file', content:'Продвинутое: Сеть\n\nping - проверить связь\ncurl - HTTP запросы' },
+    '/training/advanced/permissions.txt': { type:'file', content:'Продвинутое: Права\n\nchmod - изменить права\nchown - изменить владельца' },
+    '/docs': { type:'dir', children:['manual.txt','.secret','faq.txt'] },
+    '/docs/.secret': { type:'file', content:'СЕКРЕТНЫЙ КЛЮЧ: 4815162342' },
+    '/docs/manual.txt': { type:'file', content:'TERMINAL QUEST v2.7\n\nКоманды: help, hint, stats, achievements, rank' },
+    '/docs/faq.txt': { type:'file', content:'Частые вопросы:\n\nQ: Как сохранить прогресс?\nA: Автоматически в браузере.' },
+    '/logs': { type:'dir', children:['error.log','access.log','temp.tmp'] },
+    '/logs/error.log': { type:'file', content:'[2024-01-15] ERROR: Connection timeout\n[2024-01-15] WARN: High memory usage' },
+    '/logs/access.log': { type:'file', content:'192.168.1.1 - GET /index.html 200' },
+    '/logs/temp.tmp': { type:'file', content:'temporary data' },
+    '/system': { type:'dir', children:['diagnose.sh','config.conf','run_exploit.sh'] },
+    '/system/diagnose.sh': { type:'file', content:'#!/bin/bash\necho "[OK] All systems operational."' },
+    '/system/config.conf': { type:'file', content:'[general]\nversion = 2.7\nport = 8080' },
+    '/system/run_exploit.sh': { type:'file', content:'#!/bin/bash\necho "🏆 TERMINAL QUEST COMPLETED!"' },
+    '/user': { type:'dir', children:[] },
+    '/etc': { type:'dir', children:['passwd','hosts'] },
+    '/etc/passwd': { type:'file', content:'root:x:0:0:root:/root:/bin/bash' },
+    '/etc/hosts': { type:'file', content:'127.0.0.1   localhost' },
+    '/home': { type:'dir', children:['admin','user'] },
+    '/home/admin': { type:'dir', children:['.bashrc'] },
+    '/home/admin/.bashrc': { type:'file', content:'# ~/.bashrc\nalias ll="ls -la"' },
+    '/home/user': { type:'dir', children:[] },
+    '/var': { type:'dir', children:['log'] },
+    '/var/log': { type:'dir', children:['auth.log'] },
+    '/var/log/auth.log': { type:'file', content:'Jan 15 10:00:01 server sshd[123]: Accepted password' },
+    '/tmp': { type:'dir', children:[] }
+  };
+}
+
+// Levels
+const LEVELS = [
+  // === НАВИГАЦИЯ (1-8) ===
+  { lvl:1, text:"Узнайте текущую директорию → pwd", cmd:"pwd", hint:"Команда pwd показывает текущую директорию", category:"Навигация", difficulty:1 },
+  { lvl:2, text:"Список файлов → ls", cmd:"ls", hint:"Команда ls выводит список файлов", category:"Навигация", difficulty:1 },
+  { lvl:3, text:"Перейдите в 'training' → cd training", cmd:"cd training", hint:"cd <путь> - переход в директорию", category:"Навигация", difficulty:1 },
+  { lvl:4, text:"Прочитайте 'readme.txt' → cat readme.txt", cmd:"cat readme.txt", hint:"cat выводит содержимое файла", category:"Навигация", difficulty:1 },
+  { lvl:5, text:"Вернитесь назад → cd ..", cmd:"cd ..", hint:".. = родительская директория", category:"Навигация", difficulty:1 },
+  { lvl:6, text:"Покажите скрытые файлы → ls -a", cmd:"ls -a", hint:"Флаг -a показывает скрытые файлы", category:"Навигация", difficulty:2 },
+  { lvl:7, text:"Перейдите в 'logs' → cd logs", cmd:"cd logs", hint:"Используйте cd с именем папки", category:"Навигация", difficulty:1 },
+  { lvl:8, text:"Прочитайте 'error.log' → cat error.log", cmd:"cat error.log", hint:"cat <имя_файла>", category:"Навигация", difficulty:1 },
+  // === ФАЙЛЫ (9-18) ===
+  { lvl:9, text:"Перейдите в 'system' → cd ../system", cmd:"cd ../system", hint:".. в начале пути = вверх", category:"Файлы", difficulty:2 },
+  { lvl:10, text:"Создайте файл → touch checkpoint.txt", cmd:"touch checkpoint.txt", hint:"touch создаёт пустой файл", category:"Файлы", difficulty:2 },
+  { lvl:11, text:"Запустите скрипт → ./diagnose.sh", cmd:"./diagnose.sh", hint:"./ запускает скрипт", category:"Файлы", difficulty:2 },
+  { lvl:12, text:"Удалите temp.tmp → rm temp.tmp", cmd:"rm temp.tmp", hint:"rm = remove", category:"Файлы", difficulty:2 },
+  { lvl:13, text:"Создайте папку → mkdir backup", cmd:"mkdir backup", hint:"mkdir = make directory", category:"Файлы", difficulty:2 },
+  { lvl:14, text:"Скопируйте config.conf → cp config.conf backup/", cmd:"cp config.conf backup/", hint:"cp <откуда> <куда>", category:"Файлы", difficulty:3 },
+  { lvl:15, text:"Кто вы? → whoami", cmd:"whoami", hint:"whoami = кто я", category:"Система", difficulty:1 },
+  { lvl:16, text:"Информация о системе → uname -a", cmd:"uname -a", hint:"uname -a = вся информация", category:"Система", difficulty:2 },
+  { lvl:17, text:"Список процессов → ps", cmd:"ps", hint:"ps = process status", category:"Система", difficulty:2 },
+  { lvl:18, text:"Остановите процесс 404 → kill 404", cmd:"kill 404", hint:"kill <PID>", category:"Система", difficulty:3 },
+  // === СИСТЕМА (19-26) ===
+  { lvl:19, text:"Права на выполнение → chmod +x run_exploit.sh", cmd:"chmod +x run_exploit.sh", hint:"+x = выполнение", category:"Система", difficulty:3 },
+  { lvl:20, text:"Свободная память → free -h", cmd:"free -h", hint:"-h = human readable", category:"Система", difficulty:2 },
+  { lvl:21, text:"Мониторинг → top", cmd:"top", hint:"top = мониторинг", category:"Система", difficulty:2 },
+  { lvl:22, text:"Дисковое пространство → df -h", cmd:"df -h", hint:"df = disk free", category:"Система", difficulty:2 },
+  { lvl:23, text:"Проверьте связь → ping -c 3 localhost", cmd:"ping -c 3 localhost", hint:"-c 3 = 3 пакета", category:"Сеть", difficulty:3 },
+  { lvl:24, text:"Сетевые интерфейсы → ip addr", cmd:"ip addr", hint:"ip addr показывает IP", category:"Сеть", difficulty:3 },
+  { lvl:25, text:"Открытые порты → ss -tuln", cmd:"ss -tuln", hint:"ss = socket stats", category:"Сеть", difficulty:4 },
+  { lvl:26, text:"Загрузка файла → curl example.com", cmd:"curl example.com", hint:"curl загружает URL", category:"Сеть", difficulty:3 },
+  // === ПРОДВИНУТЫЕ (27-40) ===
+  { lvl:27, text:"Найдите файлы → find / -name '*.txt'", cmd:"find / -name '*.txt'", hint:"find <путь> -name <шаблон>", category:"Продвинутые", difficulty:4 },
+  { lvl:28, text:"Переменные окружения → env", cmd:"env", hint:"env показывает переменные", category:"Продвинутые", difficulty:2 },
+  { lvl:29, text:"История команд → history", cmd:"history", hint:"history - история команд", category:"Продвинутые", difficulty:1 },
+  { lvl:30, text:"Текущее время → date", cmd:"date", hint:"date показывает дату и время", category:"Продвинутые", difficulty:1 },
+  { lvl:31, text:"Создайте архив → tar -cvf backup.tar .", cmd:"tar -cvf backup.tar .", hint:"tar -c = create", category:"Продвинутые", difficulty:4 },
+  { lvl:32, text:"Измените владельца → chown user config.conf", cmd:"chown user config.conf", hint:"chown <user> <file>", category:"Продвинутые", difficulty:4 },
+  { lvl:33, text:"Создайте ссылку → ln -s config.conf link", cmd:"ln -s config.conf link", hint:"ln -s = symlink", category:"Продвинутые", difficulty:4 },
+  { lvl:34, text:"Найдите строку → grep root /etc/passwd", cmd:"grep root /etc/passwd", hint:"grep ищет текст", category:"Продвинутые", difficulty:3 },
+  { lvl:35, text:"Посчитайте строки → wc -l /etc/passwd", cmd:"wc -l /etc/passwd", hint:"wc -l считает строки", category:"Продвинутые", difficulty:2 },
+  { lvl:36, text:"Просмотрите начало → head /etc/passwd", cmd:"head /etc/passwd", hint:"head показывает первые строки", category:"Продвинутые", difficulty:2 },
+  { lvl:37, text:"Просмотрите конец → tail /etc/passwd", cmd:"tail /etc/passwd", hint:"tail показывает последние строки", category:"Продвинутые", difficulty:2 },
+  { lvl:38, text:"Попробуйте sudo → sudo whoami", cmd:"sudo whoami", hint:"sudo выполняет от root", category:"Продвинутые", difficulty:3 },
+  { lvl:39, text:"Очистите историю → history -c", cmd:"history -c", hint:"-c = clear", category:"Продвинутые", difficulty:2 },
+  { lvl:40, text:"ФИНАЛ → ./run_exploit.sh", cmd:"./run_exploit.sh", hint:"Запустите финальный скрипт", category:"Продвинутые", difficulty:5 }
+];
+
+const CATEGORIES = {
+  'Навигация': { icon: '🧭', color: '#3b82f6' },
+  'Файлы': { icon: '📁', color: '#f59e0b' },
+  'Система': { icon: '⚙️', color: '#8b5cf6' },
+  'Сеть': { icon: '🌐', color: '#14b8a6' },
+  'Продвинутые': { icon: '🕶️', color: '#ef4444' }
+};
+
+function getDifficultyStars(level) {
+  const d = level.difficulty || 1;
+  return '★'.repeat(d) + '☆'.repeat(5 - d);
+}
+
+const RANKS = [
+  { name: 'Новичок', minLevels: 0, icon: '🌱' },
+  { name: 'Пользователь', minLevels: 5, icon: '👤' },
+  { name: 'Хакер', minLevels: 15, icon: '💻' },
+  { name: 'Админ', minLevels: 25, icon: '🔧' },
+  { name: 'Root', minLevels: 35, icon: '👑' },
+  { name: 'Легенда', minLevels: 40, icon: '🏆' }
+];
+
+const THEMES = ['default', 'matrix', 'amber', 'light', 'ocean', 'sunset', 'forest', 'purple', 'dracula', 'nord', 'hacker', 'gruvbox', 'monokai'];
+
+// Easter Eggs
+const EASTER_EGGS = {
+  'sudo rm -rf /': { response: '💥 BOOM! Just kidding... System protected! 😈', achievement: 'dangerous' },
+  'make me a sandwich': { response: '🥪 Here\'s your sandwich! 😄', achievement: null },
+  'sudo make me a sandwich': { response: '🥪 Okay! *makes you a sandwich* 🎩' },
+  'matrix': { response: '01001000 01000101 01001100 01001100 01001111\nWAKE UP, NEO... 🐇' },
+  'konami': { response: '🎮 KONAMI CODE! ↑↑↓↓←→←→BA ✨', achievement: null },
+  '42': { response: '🎯 The Answer to Life, the Universe, and Everything! 📚' },
+  'hack the planet': { response: '🌍 HACK THE PLANET! 🎬' },
+  'exit': { response: '🚪 Дверь заперта! Вы в ловушке! 😈' },
+  'hello': { response: '👋 Привет, хакер!' },
+  'vim': { response: '😅 Как выйти из vim? ESC :q!' },
+  'nano': { response: '📝 Простой редактор для простых людей...' },
+  'neofetch': { response: '🐧 Terminal Quest v2.7\n💻 User: ' + (userProfile?.firstName || 'Hacker') + '\n🎯 Level: ' + currentLevel },
+  'cowsay hello': { response: '🐄 < Hello! >\n   \\   ^__^\n    \\  (oo)\\_______', achievement: 'cowboy' },
+  'linux': { response: '🐧 TUX одобряет!' },
+  'git': { response: '📝 git commit -m "Added cool features"' }
+};
+
+// DOM Elements
+const container = document.getElementById('tqContainer');
+const outputEl = document.getElementById('output');
+const inputEl = document.getElementById('cmdInput');
+const promptEl = document.getElementById('promptEl');
+const lvlBadge = document.getElementById('lvlBadge');
+const missionTxt = document.getElementById('missionTxt');
+const progFill = document.getElementById('progFill');
+const muteBtn = document.getElementById('muteBtn');
+const musicBar = document.getElementById('musicBar');
+const trackName = document.getElementById('trackName');
+const variationBadge = document.getElementById('variationBadge');
+const playPauseBtn = document.getElementById('playPauseBtn');
+const xpDisplay = document.getElementById('xpDisplay');
+const cmdCount = document.getElementById('cmdCount');
+const achCount = document.getElementById('achCount');
+const rankIcon = document.getElementById('rankIcon');
+const rankName = document.getElementById('rankName');
+const achievementPopup = document.getElementById('achievementPopup');
+const hintBar = document.getElementById('hintBar');
+const comboIndicator = document.getElementById('comboIndicator');
+
+// Audio
+let audioCtx = null, masterGain = null, isMuted = false, musicInterval = null;
+let currentTrack = 'cyber', beat = 0, variation = 1;
+
+const N = {
+  C1:32.70, D1:36.71, E1:41.20, F1:43.65, G1:49.00, A1:55.00, B1:61.74,
+  C2:65.41, D2:73.42, E2:82.41, F2:87.31, G2:98.00, A2:110.00, B2:123.47,
+  C3:130.81, Cs3:138.59, D3:146.83, Ds3:155.56, E3:164.81, F3:174.61, Fs3:185.00, G3:196.00, Gs3:207.65, A3:220.00, As3:233.08, B3:246.94,
+  C4:261.63, Cs4:277.18, D4:293.66, Ds4:311.13, E4:329.63, F4:349.23, Fs4:369.99, G4:392.00, Gs4:415.30, A4:440.00, As4:466.16, B4:493.88,
+  C5:523.25, Cs5:554.37, D5:587.33, Ds5:622.25, E5:659.25, F5:698.46, Fs5:739.99, G5:783.99, Gs5:830.61, A5:880.00, As5:932.33, B5:987.77,
+  C6:1046.50, Ab2:103.83, Bb2:116.54, Ab3:207.65, Bb3:233.08, Ab4:415.30, Bb4:466.16, Eb5:622.25
+};
+
+function initAudio() { if (audioCtx) return; try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); masterGain = audioCtx.createGain(); masterGain.gain.value = 0.4; masterGain.connect(audioCtx.destination); } catch {} }
+function playNote(freq, type, dur, vol = 0.1, delay = 0) { if (!audioCtx || isMuted || !freq) return; const t = audioCtx.currentTime + delay; const o = audioCtx.createOscillator(); const g = audioCtx.createGain(); o.type = type; o.frequency.value = freq; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + 0.01); g.gain.exponentialRampToValueAtTime(0.001, t + dur); o.connect(g); g.connect(masterGain); o.start(t); o.stop(t + dur); }
+function kick(d = 0, v = 0.35) { if (!audioCtx || isMuted) return; const t = audioCtx.currentTime + d; const o = audioCtx.createOscillator(); const g = audioCtx.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.1); g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.3); o.connect(g); g.connect(masterGain); o.start(t); o.stop(t + 0.3); }
+function snare(d = 0, v = 0.12) { if (!audioCtx || isMuted) return; const t = audioCtx.currentTime + d; const bufferSize = audioCtx.sampleRate * 0.1; const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate); const data = buffer.getChannelData(0); for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1; const noise = audioCtx.createBufferSource(); const g = audioCtx.createGain(); const filter = audioCtx.createBiquadFilter(); noise.buffer = buffer; filter.type = 'highpass'; filter.frequency.value = 1000; g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.1); noise.connect(filter); filter.connect(g); g.connect(masterGain); noise.start(t); noise.stop(t + 0.1); }
+function hihat(d = 0, open = false, v = 0.06) { if (!audioCtx || isMuted) return; const t = audioCtx.currentTime + d; const dur = open ? 0.15 : 0.05; const bufferSize = audioCtx.sampleRate * dur; const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate); const data = buffer.getChannelData(0); for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1; const noise = audioCtx.createBufferSource(); const g = audioCtx.createGain(); const filter = audioCtx.createBiquadFilter(); noise.buffer = buffer; filter.type = 'highpass'; filter.frequency.value = 7000; g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur); noise.connect(filter); filter.connect(g); g.connect(masterGain); noise.start(t); noise.stop(t + dur); }
+function sfx(type) { if (!audioCtx || isMuted) return; if (type === 'ok') [N.C5, N.E5, N.G5].forEach((f, i) => setTimeout(() => playNote(f, 'sine', 0.2, 0.08), i * 50)); if (type === 'err') playNote(N.E3, 'sawtooth', 0.2, 0.1); if (type === 'type') playNote(N.A5, 'square', 0.03, 0.03); if (type === 'boot') playNote(N.C4, 'triangle', 0.1, 0.05); if (type === 'achievement') [N.C5, N.E5, N.G5, N.C6].forEach((f, i) => setTimeout(() => playNote(f, 'sine', 0.15, 0.1), i * 80)); if (type === 'levelup') [N.G4, N.A4, N.B4, N.C5].forEach((f, i) => setTimeout(() => playNote(f, 'triangle', 0.12, 0.08), i * 60)); }
+
+const MUSIC_TRACKS = {
+  'cyber': { 
+    name: 'Cyberpunk City', bpm: 110, 
+    play: function() { 
+      const B = beat; 
+      const melody = [N.Ds5, N.D5, N.Cs5, N.C5, N.B4, N.As4, N.A4, N.Gs4]; 
+      const bass = [N.Gs2, N.Gs2, N.E2, N.E2, N.Cs3, N.Cs3, N.B2, N.B2]; 
+      const arp = [N.Gs4, N.B4, N.D5, N.Gs4, N.B4, N.D5, N.Gs4, N.B4];
+      if (B % 2 === 0) playNote(bass[Math.floor(B/2) % 8], 'sawtooth', 0.18, 0.22); 
+      if (variation >= 2 && B % 4 === 0) playNote(melody[Math.floor(B/4) % 8], 'square', 0.15, 0.1); 
+      if (variation >= 3 && B % 2 === 0) playNote(arp[(B/2) % 8], 'sine', 0.1, 0.06);
+      if (B % 4 === 0) kick(); 
+      if (B % 4 === 2) snare(); 
+      hihat(0, B % 8 === 6, 0.05);
+      if (variation >= 4 && B % 8 === 4) snare(0.1, 0.08);
+    } 
+  },
+  'lofi': { 
+    name: 'Lo-Fi Study', bpm: 75, 
+    play: function() { 
+      const B = beat; 
+      const chords = [[N.C4, N.E4, N.G4, N.B4], [N.A3, N.C4, N.E4, N.G4], [N.F3, N.A3, N.C4, N.E4], [N.G3, N.B3, N.D4, N.F4]]; 
+      const melody = [N.G5, N.A5, N.G5, N.E5, N.D5, N.E5, N.G5, N.A5];
+      if (B % 16 === 0) chords[Math.floor(B / 16) % 4].forEach((n, i) => playNote(n, 'sine', 2, 0.04, i * 0.05)); 
+      if (variation >= 2 && B % 8 === 0) playNote(melody[(B/8) % 8], 'triangle', 0.3, 0.08);
+      if (B % 8 === 0) kick(0, 0.3); 
+      if (B % 8 === 5) snare(0, 0.1); 
+      if (B % 4 === 2 || B % 4 === 0) hihat(0, B % 8 === 2, 0.04); 
+      if (variation >= 3) hihat(0.3, true, 0.02);
+    } 
+  },
+  '8bit': { 
+    name: '8-Bit Adventure', bpm: 120, 
+    play: function() { 
+      const B = beat; 
+      const melody = [N.E5, N.E5, 0, N.E5, 0, N.C5, N.E5, 0, N.G5, 0, 0, 0, N.G4, 0, 0, 0]; 
+      const bass = [N.C3, 0, N.G3, 0, N.A3, 0, N.G3, 0]; 
+      const arp = [N.E4, N.G4, N.C5, N.G4, N.E4, N.G4, N.C5, N.G4];
+      if (melody[B % 16]) playNote(melody[B % 16], 'square', 0.12, 0.12); 
+      if (bass[B % 8]) playNote(bass[B % 8], 'triangle', 0.15, 0.12); 
+      if (variation >= 2) playNote(arp[B % 8], 'square', 0.08, 0.04);
+      if (B % 4 === 0) kick(); 
+      if (variation >= 2 && B % 4 === 2) snare(0, 0.08);
+      if (variation >= 3 && B % 2 === 0) hihat(0, false, 0.03);
+    } 
+  },
+  'ambient': { 
+    name: 'Deep Space', bpm: 50, 
+    play: function() { 
+      const B = beat; 
+      if (B % 64 === 0) { playNote(N.C2, 'sine', 8, 0.08); playNote(N.G2, 'sine', 8, 0.05); }
+      if (variation >= 2 && B % 32 === 0) { playNote(N.C4, 'sine', 4, 0.03); playNote(N.E4, 'sine', 4, 0.025); playNote(N.G4, 'sine', 4, 0.02); }
+      if (Math.random() > 0.9) playNote(300 + Math.random() * 800, 'sine', 1 + Math.random() * 2, 0.015);
+      if (variation >= 3 && B % 16 === 0) playNote(N.C3, 'sine', 3, 0.04);
+    } 
+  },
+  'hiphop': { 
+    name: 'Boom Bap', bpm: 90, 
+    play: function() { 
+      const B = beat; 
+      const bass = [N.D2, N.D2, N.A2, N.A2, N.G2, N.G2, N.A2, N.A2];
+      if (B % 8 === 0 || B % 8 === 4) kick(0, 0.4); 
+      if (B % 8 === 2 || B % 8 === 6) snare(0, 0.15); 
+      if (B % 2 === 0) hihat(0, false, 0.05);
+      if (variation >= 2 && B % 2 === 0) playNote(bass[(B/2) % 8], 'sine', 0.2, 0.15);
+      if (variation >= 3 && (B % 8 === 3 || B % 8 === 7)) snare(0, 0.04);
+      if (variation >= 4 && B % 2 === 1) hihat(0, true, 0.03);
+    } 
+  },
+  'electronic': { 
+    name: 'Electro Pulse', bpm: 128, 
+    play: function() { 
+      const B = beat; 
+      const bass = [N.C2, N.C2, N.G2, N.G2, N.Ab2, N.Ab2, N.Bb2, N.Bb2];
+      const synth = [N.C5, N.Eb5, N.G5, N.Eb5, N.C5, N.Eb5, N.G5, N.Bb5];
+      kick(); 
+      if (B % 4 === 2) snare(); 
+      hihat(0, B % 2 === 1, 0.05); 
+      if (variation >= 2) playNote(bass[B % 8], 'sawtooth', 0.1, 0.18);
+      if (variation >= 3 && B % 2 === 0) playNote(synth[(B/2) % 8], 'square', 0.1, 0.06);
+      if (variation >= 4 && B % 16 >= 12) hihat(0.1, true, 0.08);
+    } 
+  }
+};
+
+function playTrack(key) { const track = MUSIC_TRACKS[key]; if (!track) return; initAudio(); stopMusic(); currentTrack = key; beat = 0; variation = 1; musicBar.style.display = 'block'; trackName.textContent = track.name; variationBadge.textContent = 'Var 1'; playPauseBtn.textContent = '⏸'; const msPerBeat = 60000 / (track.bpm || 100); musicInterval = setInterval(() => { if (!isMuted) track.play(); beat++; if (beat % 64 === 0) { variation = variation >= 4 ? 1 : variation + 1; variationBadge.textContent = `Var ${variation}`; } }, msPerBeat); unlockAchievement('music_lover'); settings.music = key; safeSave(SETTINGS_KEY, settings); }
+function stopMusic() { if (musicInterval) { clearInterval(musicInterval); musicInterval = null; } beat = 0; variation = 1; }
+function toggleMusic() { if (musicInterval) { stopMusic(); playPauseBtn.textContent = '▶'; } else if (currentTrack) playTrack(currentTrack); }
+
+muteBtn.addEventListener('click', () => { isMuted = !isMuted; muteBtn.textContent = isMuted ? '🔇' : '🔊'; });
+playPauseBtn.addEventListener('click', toggleMusic);
+document.getElementById('prevTrack').addEventListener('click', () => { const keys = Object.keys(MUSIC_TRACKS); playTrack(keys[(keys.indexOf(currentTrack) - 1 + keys.length) % keys.length]); });
+document.getElementById('nextTrack').addEventListener('click', () => { const keys = Object.keys(MUSIC_TRACKS); playTrack(keys[(keys.indexOf(currentTrack) + 1) % keys.length]); });
+document.getElementById('startTutorialBtn')?.addEventListener('click', () => { document.getElementById('tutorialOverlay').style.display = 'none'; line('<span style="color:#60a5fa;">🎓 Обучение начато! Введите первую команду.</span>'); });
+
+// Theme
+let themesUsed = new Set();
+function applyTheme(name) { container.className = 'tq-terminal-wrap tq-theme-' + name; settings.theme = name; themesUsed.add(name); if (themesUsed.size >= 3) unlockAchievement('theme_changer'); safeSave(SETTINGS_KEY, settings); }
+
+// Achievements
+function unlockAchievement(id) {
+  const achievement = achievements.find(a => a.id === id);
+  if (achievement && !achievement.unlocked) {
+    sfx('achievement');
+    achievement.unlocked = true;
+    stats.xp += 200;
+    document.getElementById('achievementIcon').textContent = achievement.icon;
+    document.getElementById('achievementName').textContent = achievement.name;
+    document.getElementById('achievementDesc').textContent = achievement.description;
+    achievementPopup.classList.add('show');
+    createConfetti(20);
+    setTimeout(() => achievementPopup.classList.remove('show'), 3000);
+    updateStats();
+    saveAll();
+  }
+}
+
+function getCurrentRank() { for (let i = RANKS.length - 1; i >= 0; i--) { if (currentLevel >= RANKS[i].minLevels) return RANKS[i]; } return RANKS[0]; }
+
+// Daily System
+function getTodayKey() { return new Date().toISOString().split('T')[0]; }
+
+function initDailySystem() {
+  const today = getTodayKey();
+  const saved = safeLoad(DAILY_KEY, { date: today, progress: {}, completedTasks: [] });
+  
+  if (saved.date !== today) {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayKey = yesterday.toISOString().split('T')[0];
+    
+    if (saved.date === yesterdayKey) {
+      stats.streak = (stats.streak || 0) + 1;
+    } else if (saved.date !== today) {
+      stats.streak = 1;
+    }
+    
+    dailyProgress = {};
+    saved.date = today;
+    saved.progress = {};
+    saved.completedTasks = [];
+    stats.lastPlayedDate = today;
+    safeSave(DAILY_KEY, saved);
+    saveAll();
+  } else {
+    dailyProgress = saved.progress || {};
+  }
+  
+  updateDailyPanel();
+  updateStreakBadge();
+}
+
+function updateDailyProgress(taskId, increment = 1) {
+  const today = getTodayKey();
+  const saved = safeLoad(DAILY_KEY, { date: today, progress: {}, completedTasks: [] });
+  
+  if (!saved.progress[taskId]) saved.progress[taskId] = 0;
+  saved.progress[taskId] += increment;
+  
+  const task = DAILY_TASKS.find(t => t.id === taskId);
+  if (task && saved.progress[taskId] >= task.target && !saved.completedTasks.includes(taskId)) {
+    saved.completedTasks.push(taskId);
+    stats.xp += task.xp;
+    stats.dailyTasksCompleted = (stats.dailyTasksCompleted || 0) + 1;
+    createConfetti(10);
+    line(`<span style="color:#10b981;font-weight:600;">✓ Задание: ${task.name} (+${task.xp} XP)</span>`);
+    sfx('achievement');
+  }
+  
+  dailyProgress = saved.progress;
+  safeSave(DAILY_KEY, saved);
+  updateDailyPanel();
+  saveAll();
+}
+
+function updateDailyPanel() {
+  const grid = document.getElementById('tasksGrid');
+  if (!grid) return;
+  
+  const saved = safeLoad(DAILY_KEY, { date: getTodayKey(), progress: {}, completedTasks: [] });
+  
+  grid.innerHTML = DAILY_TASKS.map(task => {
+    const progress = saved.progress[task.id] || 0;
+    const completed = saved.completedTasks.includes(task.id);
+    const percent = Math.min(100, (progress / task.target) * 100);
+    
+    return `
+      <div class="tq-task-item ${completed ? 'completed' : ''}">
+        <span class="tq-task-icon">${task.icon}</span>
+        <div class="tq-task-info">
+          <div class="tq-task-name">${task.name}</div>
+          <div class="tq-task-progress">${progress}/${task.target}</div>
+          <div class="tq-task-bar"><div class="tq-task-fill" style="width: ${percent}%"></div></div>
+        </div>
+        ${completed ? '<span class="tq-task-xp">✓</span>' : `<span class="tq-task-xp">+${task.xp}</span>`}
+      </div>
+    `;
+  }).join('');
+}
+
+function updateStreakBadge() {
+  const badge = document.getElementById('streakBadge');
+  const count = document.getElementById('streakCount');
+  if (!badge || !count) return;
+  count.textContent = stats.streak || 0;
+  badge.classList.toggle('inactive', !stats.streak);
+}
+
+function updateCategoryProgress() {
+  const container = document.getElementById('categoryProgress');
+  const totalEl = document.getElementById('progressTotal');
+  if (!container) return;
+  
+  const categoryStats = {};
+  Object.keys(CATEGORIES).forEach(cat => {
+    const levels = LEVELS.filter(l => l.category === cat);
+    const completed = levels.filter((l, i) => LEVELS.indexOf(l) < currentLevel).length;
+    categoryStats[cat] = { total: levels.length, completed, color: CATEGORIES[cat].color };
+  });
+  
+  if (totalEl) totalEl.textContent = `${currentLevel}/${LEVELS.length}`;
+  
+  container.innerHTML = Object.entries(categoryStats).map(([cat, data]) => {
+    const percent = data.total > 0 ? (data.completed / data.total) * 100 : 0;
+    const catInfo = CATEGORIES[cat];
+    return `
+      <div class="tq-category-row">
+        <span class="tq-category-icon">${catInfo.icon}</span>
+        <div class="tq-category-info">
+          <div class="tq-category-name">${cat}</div>
+          <div class="tq-category-bar"><div class="tq-category-fill" style="width: ${percent}%; background: ${catInfo.color}"></div></div>
+        </div>
+        <span class="tq-category-count">${data.completed}/${data.total}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function updateLeaderboardDisplay() {
+  const listEl = document.getElementById('leaderboardList');
+  if (!listEl) return;
+  
+  const leaderboard = safeLoad('tq_leaderboard_v3', []);
+  const currentName = userProfile.firstName || 'User';
+  
+  if (leaderboard.length === 0) {
+    leaderboard.push({ name: currentName, xp: stats.xp, levels: currentLevel, date: new Date().toISOString() });
+  }
+  
+  listEl.innerHTML = leaderboard.slice(0, 5).map((entry, i) => {
+    const rankClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
+    const isCurrentPlayer = entry.name === currentName;
+    return `
+      <div class="tq-leaderboard-item">
+        <div class="tq-lb-rank ${rankClass}">${i + 1}</div>
+        <div class="tq-lb-name">${entry.name}${isCurrentPlayer ? ' (вы)' : ''}</div>
+        <div class="tq-lb-score">${entry.xp} XP</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Print helpers
+const C = { ok: '#10b981', err: '#ef4444', info: '#60a5fa', warn: '#f59e0b', dim: '#64748b' };
+function line(html, color) { const d = document.createElement('div'); d.innerHTML = color ? `<span style="color:${color}">${html}</span>` : html; outputEl.appendChild(d); outputEl.scrollTop = outputEl.scrollHeight; }
+function print(text, type) { const cm = { ok: C.ok, err: C.err, info: C.info, warn: C.warn, dim: C.dim }; line(esc(text), cm[type] || ''); }
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function br() { line(''); }
+
+// UI Update
+function updateUI() {
+  if (currentLevel >= LEVELS.length) {
+    isSandbox = true;
+    missionTxt.textContent = '🏆 SANDBOX MODE';
+    lvlBadge.textContent = 'HACKER';
+    progFill.style.width = '100%';
+    hintBar.style.display = 'none';
+  } else {
+    const lv = LEVELS[currentLevel];
+    missionTxt.textContent = lv.text;
+    lvlBadge.textContent = `LVL ${lv.lvl}`;
+    progFill.style.width = `${(currentLevel / LEVELS.length) * 100}%`;
+    showHint();
+  }
+  localStorage.setItem(SAVE_KEY, currentLevel);
+}
+
+function updatePrompt() { const dir = currentPath.split('/').pop() || '/'; promptEl.textContent = `${(userProfile.firstName || 'user').toLowerCase()}@tq:${dir}$`; }
+
+function updateStats() {
+  xpDisplay.textContent = stats.xp;
+  cmdCount.textContent = stats.commandsExecuted;
+  achCount.textContent = `${achievements.filter(a => a.unlocked).length}/${achievements.length}`;
+  const rank = getCurrentRank();
+  rankIcon.textContent = rank.icon;
+  rankName.textContent = rank.name;
+}
+
+function checkLevel(cmd) {
+  if (isSandbox || isEditMode) return;
+  if (cmd.trim() === LEVELS[currentLevel].cmd) {
+    sfx('levelup');
+    flashSuccess();
+    updateCombo();
+    const multiplier = getComboMultiplier();
+    const baseXP = 100;
+    const earnedXP = Math.floor(baseXP * multiplier);
+    
+    br();
+    if (multiplier > 1) {
+      line(`<span style="color:${C.ok};font-weight:700;">✓ Уровень ${LEVELS[currentLevel].lvl} пройден! +${earnedXP} XP</span>`);
+      line(`<span style="color:#f59e0b;font-weight:600;">⚡ COMBO x${comboCount}</span>`);
+    } else {
+      line(`<span style="color:${C.ok};font-weight:700;">✓ Уровень ${LEVELS[currentLevel].lvl} пройден! +${earnedXP} XP</span>`);
+    }
+    br();
+    
+    currentLevel++;
+    stats.levelsCompleted++;
+    stats.xp += earnedXP;
+    
+    updateDailyProgress('complete_3_levels', 1);
+    
+    if (currentLevel % 10 === 0) {
+      createConfetti(30);
+      line(`<span style="color:#8b5cf6;font-weight:700;">🎉 Пройдено ${currentLevel} уровней!</span>`);
+      br();
+    }
+    
+    if (currentLevel >= 8) unlockAchievement('navigator');
+    if (currentLevel >= 18) unlockAchievement('file_master');
+    if (currentLevel >= 40) { unlockAchievement('hacker'); unlockAchievement('completionist'); unlockAchievement('legend'); createConfetti(100); }
+    if (stats.xp >= 3000) unlockAchievement('xp_master');
+    
+    updateUI();
+    updateStats();
+    updateCategoryProgress();
+    saveAll();
+  }
+}
+
+function showHint() {
+  if (isSandbox) { hintBar.style.display = 'none'; return; }
+  const level = LEVELS[currentLevel];
+  if (!level) return;
+  
+  const hintIcon = document.getElementById('hintIcon');
+  const hintCategory = document.getElementById('hintCategory');
+  const hintDifficulty = document.getElementById('hintDifficulty');
+  const hintText = document.getElementById('hintText');
+  const hintCmd = document.getElementById('hintCmd');
+  
+  const cat = CATEGORIES[level.category] || { icon: '💡', color: '#3b82f6' };
+  if (hintIcon) hintIcon.textContent = cat.icon;
+  if (hintCategory) hintCategory.textContent = level.category || 'Основы';
+  if (hintDifficulty) hintDifficulty.textContent = getDifficultyStars(level);
+  if (hintText) hintText.textContent = level.hint || 'Выполните команду';
+  if (hintCmd) hintCmd.textContent = '> ' + level.cmd;
+  
+  hintBar.style.display = 'block';
+}
+
+// Combo
+function updateCombo() {
+  const now = Date.now();
+  if (now - lastCommandTime < COMBO_TIMEOUT) {
+    comboCount++;
+  } else {
+    comboCount = 1;
+  }
+  lastCommandTime = now;
+  
+  if (comboTimer) clearTimeout(comboTimer);
+  comboTimer = setTimeout(() => {
+    comboCount = 0;
+    if (comboIndicator) comboIndicator.classList.remove('active');
+  }, COMBO_TIMEOUT);
+  
+  if (comboCount >= 2 && comboIndicator) {
+    comboIndicator.textContent = `COMBO x${comboCount}`;
+    comboIndicator.classList.add('active');
+  }
+}
+
+function getComboMultiplier() {
+  if (comboCount >= 10) return 3;
+  if (comboCount >= 5) return 2;
+  if (comboCount >= 3) return 1.5;
+  return 1;
+}
+
+// Confetti
+function createConfetti(count = 50) {
+  const container = document.getElementById('confettiContainer');
+  if (!container) return;
+  
+  const colors = ['#3fb950', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+  
+  for (let i = 0; i < count; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'tq-confetti-piece';
+    piece.style.left = Math.random() * 100 + '%';
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.animationDelay = Math.random() * 0.5 + 's';
+    piece.style.animationDuration = (2 + Math.random() * 2) + 's';
+    container.appendChild(piece);
+    setTimeout(() => piece.remove(), 4000);
+  }
+}
+
+// Flash
+function flashSuccess() {
+  const terminal = document.getElementById('terminal');
+  if (!terminal) return;
+  terminal.classList.remove('success-flash');
+  void terminal.offsetWidth;
+  terminal.classList.add('success-flash');
+}
+
+function flashError() {
+  const terminal = document.getElementById('terminal');
+  if (!terminal) return;
+  terminal.classList.remove('error-flash');
+  void terminal.offsetWidth;
+  terminal.classList.add('error-flash');
+}
+
+// File System
+function resolvePath(arg) {
+  if (!arg) return currentPath;
+  if (arg.startsWith('/')) return arg.replace(/\/$/, '') || '/';
+  const parts = currentPath === '/' ? [] : currentPath.split('/').filter(Boolean);
+  arg.split('/').forEach(p => {
+    if (p === '..') { if (parts.length) parts.pop(); }
+    else if (p !== '.') parts.push(p);
+  });
+  return '/' + parts.join('/') || '/';
+}
+
+// Command Processor
+let helpCount = 0;
+function process(raw) {
+  const cmd = raw.trim();
+  if (!cmd && !isEditMode) return;
+  
+  br();
+  line(`<span style="color:#22d3ee;font-weight:700;">${esc(promptEl.textContent)}</span> <span style="color:#a5b4fc;">${esc(cmd)}</span>`);
+  cmdHistory.unshift(cmd); histIdx = -1;
+  stats.commandsExecuted++;
+  
+  updateDailyProgress('use_10_commands', 1);
+  
+  const parts = cmd.split(/\s+/);
+  const c = parts[0], a1 = parts[1], a2 = parts[2];
+  
+  usedCommands.add(c);
+  if (usedCommands.size >= 20) unlockAchievement('explorer');
+  if (stats.commandsExecuted === 1) unlockAchievement('first_command');
+  if (stats.commandsExecuted >= 50) unlockAchievement('dedicated');
+  
+  // Easter eggs
+  const egg = EASTER_EGGS[cmd.toLowerCase()];
+  if (egg) {
+    print(egg.response);
+    if (egg.achievement) unlockAchievement(egg.achievement);
+    if (!stats.easterEggsFound.includes(cmd)) { stats.easterEggsFound.push(cmd); stats.xp += 50; }
+    if (stats.easterEggsFound.length >= 3) unlockAchievement('easter_hunter');
+    sfx('ok');
+    updateStats();
+    saveAll();
+    return;
+  }
+  
+  switch (c) {
+    case 'pwd': print(currentPath); break;
+    case 'ls': {
+      const showHidden = a1 === '-a' || a1 === '-la';
+      const target = showHidden ? currentPath : (a1?.[0] !== '-' && a1 ? resolvePath(a1) : currentPath);
+      const node = FS[target];
+      if (!node || node.type !== 'dir') { print(`ls: нет такой директории: ${target}`, 'err'); sfx('err'); break; }
+      let items = node.children;
+      if (!showHidden) items = items.filter(f => !f.startsWith('.'));
+      if (!items.length) { print('(пусто)', 'dim'); break; }
+      line(items.map(f => FS[`${target}/${f}`]?.type === 'dir' ? `<span style="color:#60a5fa;font-weight:700;">${f}/</span>` : `<span style="color:#10b981;">${f}</span>`).join('  '));
+      break;
+    }
+    case 'cd': {
+      if (!a1) { currentPath = '/user'; updatePrompt(); break; }
+      const np = resolvePath(a1);
+      if (FS[np]?.type === 'dir') { currentPath = np; updatePrompt(); }
+      else { print(`cd: не найдено: ${a1}`, 'err'); sfx('err'); }
+      break;
+    }
+    case 'cat': {
+      if (!a1) { print('cat: нужно имя файла', 'warn'); break; }
+      const fp = resolvePath(a1);
+      if (FS[fp]?.type === 'file') { print(FS[fp].content); }
+      else { print(`cat: ${a1}: не найдено`, 'err'); sfx('err'); }
+      break;
+    }
+    case 'touch': {
+      if (!a1) break;
+      const fp = resolvePath(a1);
+      if (!FS[fp]) { FS[fp] = { type: 'file', content: '' }; FS[currentPath].children.push(a1); safeSave(FS_KEY, FS); print(`Создан файл: ${a1}`, 'ok'); stats.filesCreated++; }
+      else print('Файл уже существует.', 'warn');
+      break;
+    }
+    case 'mkdir': {
+      if (!a1) break;
+      const mp = resolvePath(a1);
+      if (!FS[mp]) { FS[mp] = { type: 'dir', children: [] }; FS[currentPath].children.push(a1); safeSave(FS_KEY, FS); print(`Создана папка: ${a1}`, 'ok'); }
+      else print('Уже существует.', 'warn');
+      break;
+    }
+    case 'rm': {
+      if (!a1) break;
+      const rp = resolvePath(a1);
+      if (FS[rp]) { delete FS[rp]; FS[currentPath].children = FS[currentPath].children.filter(f => f !== a1); safeSave(FS_KEY, FS); print(`Удалено: ${a1}`, 'ok'); }
+      else { print(`rm: ${a1}: не найдено`, 'err'); sfx('err'); }
+      break;
+    }
+    case 'grep': {
+      if (!a1) { print('grep: укажите шаблон', 'warn'); break; }
+      const fp = resolvePath(parts[2]);
+      if (FS[fp]?.type === 'file') { FS[fp].content.split('\n').filter(l => l.toLowerCase().includes(a1.toLowerCase())).forEach(l => print(l)); }
+      break;
+    }
+    case 'head': {
+      if (!a1) break;
+      const fp = resolvePath(a1);
+      if (FS[fp]?.type === 'file') FS[fp].content.split('\n').slice(0, 10).forEach(l => print(l));
+      else print(`head: ${a1}: не найдено`, 'err');
+      break;
+    }
+    case 'tail': {
+      if (!a1) break;
+      const fp = resolvePath(a1);
+      if (FS[fp]?.type === 'file') FS[fp].content.split('\n').slice(-10).forEach(l => print(l));
+      else print(`tail: ${a1}: не найдено`, 'err');
+      break;
+    }
+    case 'wc': {
+      if (!a1) break;
+      const fp = resolvePath(a1);
+      if (FS[fp]?.type === 'file') { const c = FS[fp].content; print(` ${c.split('\n').length}  ${c.split(/\s+/).length}  ${c.length} ${a1}`); }
+      break;
+    }
+    case 'find': {
+      print('Найдено:');
+      Object.keys(FS).filter(p => !a1 || p.includes(a1.replace(/\*/g, ''))).forEach(p => print(p));
+      break;
+    }
+    case 'ping': print(`PING ${a1 || 'localhost'}: 64 bytes: time=12ms`, 'info'); break;
+    case 'ps': print('  PID  NAME\n  101  system\n  202  kernel\n  404  guard [!]', 'info'); break;
+    case 'kill': print(parseInt(a1) === 404 ? 'Process 404 terminated.' : `kill: (${a1}) — terminated.`, 'ok'); break;
+    case 'chmod': print(`chmod: права изменены для ${a1 || 'файла'}`, 'ok'); break;
+    case 'chown': print(`chown: владелец изменён`, 'ok'); break;
+    case 'ssh': print(`SSH connecting to ${a1 || 'host'}...\nConnected.`, 'info'); break;
+    case 'whoami': print(userProfile.firstName.toLowerCase() || 'user'); break;
+    case 'uname': print(a1 === '-a' ? 'TerminalQuest 5.15.0 x86_64' : 'TerminalQuest'); break;
+    case 'hostname': print('terminal-quest'); break;
+    case 'date': print(new Date().toString()); break;
+    case 'uptime': print(` ${new Date().toLocaleTimeString()} up 1 day, load: 0.52`); break;
+    case 'free': print('              total        used        free\nMem:           8192        4096        4096'); break;
+    case 'df': print('Filesystem     Size  Used  Available\n/dev/sda1      50G   12G   38G'); break;
+    case 'top': print('top - ' + new Date().toLocaleTimeString() + '\nTasks: 142 total\n%CPU: 12.5%'); break;
+    case 'ip': print(a1 === 'addr' ? '1: lo: 127.0.0.1\n2: eth0: 192.168.1.100' : 'ip addr'); break;
+    case 'ss': print('Netid  State   Local:Port\n tcp   LISTEN  0.0.0.0:22'); break;
+    case 'env': print(`USER=${userProfile.firstName || 'user'}\nHOME=/home/user\nPATH=/usr/bin:/bin`); break;
+    case 'history': if (a1 === '-c') { cmdHistory = []; print('История очищена.', 'ok'); } else cmdHistory.slice(0, 20).forEach((h, i) => print(`  ${i + 1}  ${h}`)); break;
+    case 'tar': print(`tar: архив ${a1?.includes('c') ? 'создан' : 'обработан'}`, 'ok'); break;
+    case 'ln': print(`ln: создана ссылка`, 'ok'); break;
+    case 'sudo': print('root@terminal-quest:~# Welcome!', 'ok'); break;
+    case 'man': print(`${(a1 || 'cmd').toUpperCase()}(1) — Руководство`); break;
+    case 'which': print(`/usr/bin/${a1 || 'cmd'}`); break;
+    case 'cowsay': { const msg = parts.slice(1).join(' ') || 'Moo!'; print(` ${'_'.repeat(msg.length + 2)}`); print(`< ${msg} >`); print(` ${'-'.repeat(msg.length + 2)}`); print('        \\   ^__^'); print('         \\  (oo)\\_______'); unlockAchievement('cowboy'); break; }
+    case './diagnose.sh': print('Running diagnostics...\n[OK] CPU: 12%\n[OK] RAM: 3.1GB free\n[OK] Network: online', 'ok'); break;
+    case './run_exploit.sh': print('╔══════════════════════════════════════════════════════╗\n║           TERMINAL QUEST COMPLETED!                  ║\n╚══════════════════════════════════════════════════════╝\n\n🏆 Поздравляем! Вы прошли все уровни!', 'ok'); sfx('achievement'); break;
+    case 'hint': showHint(); break;
+    case 'clear': outputEl.innerHTML = ''; return;
+    case 'reset': if (confirm('Сбросить весь прогресс?')) { localStorage.clear(); location.reload(); } return;
+    case 'profile': br(); print('╔════════════════════════════════════════╗'); print('║              ПРОФИЛЬ                   ║'); print('╚════════════════════════════════════════╝'); br(); print(`  Имя: ${userProfile.firstName}`); print(`  ${userProfile.bio}`); br(); break;
+    case 'edit': br(); print('── РЕДАКТИРОВАТЬ ПРОФИЛЬ ──', 'warn'); print('Введите имя:', 'warn'); isEditMode = true; return;
+    case 'stats': br(); print('╔════════════════════════════════════════╗'); print('║           ВАША СТАТИСТИКА              ║'); print('╚════════════════════════════════════════╝'); br(); print(`  📊 Уровней: ${currentLevel}/40`); print(`  ⭐ XP: ${stats.xp}`); print(`  💻 Команд: ${stats.commandsExecuted}`); print(`  📁 Файлов: ${stats.filesCreated}`); print(`  🥚 Секретов: ${stats.easterEggsFound.length}`); br(); break;
+    case 'achievements': br(); print('╔════════════════════════════════════════╗'); print('║            ДОСТИЖЕНИЯ                 ║'); print('╚════════════════════════════════════════╝'); br(); achievements.forEach(a => print(`  ${a.unlocked ? '✅' : '⬜'} ${a.icon} ${a.name}`)); br(); break;
+    case 'rank': { const rank = getCurrentRank(); br(); print('╔════════════════════════════════════════╗'); print('║             ВАШ РАНГ                    ║'); print('╚════════════════════════════════════════╝'); br(); print(`  ${rank.icon} ${rank.name}`); print(`  Уровней: ${currentLevel}/40`); br(); break; }
+    case 'theme': if (THEMES.includes(a1)) { applyTheme(a1); print(`Тема: ${a1}`, 'ok'); updateDailyProgress('try_new_theme', 1); } else { print('Темы: ' + THEMES.join(', '), 'info'); } break;
+    case 'music': { if (!a1) { br(); print('─── МУЗЫКА ────────────────────────'); Object.keys(MUSIC_TRACKS).forEach(k => print(`  ${k.padEnd(14)} — ${MUSIC_TRACKS[k].name}`)); print('music <трек> — играть', 'dim'); break; } if (a1 === 'stop') { stopMusic(); musicBar.style.display = 'none'; print('Музыка остановлена.', 'ok'); break; } if (MUSIC_TRACKS[a1]) { playTrack(a1); print(`♫ ${MUSIC_TRACKS[a1].name}`, 'ok'); } else print(`Трек не найден: ${a1}`, 'err'); break; }
+    case 'help': printHelp(); helpCount++; if (helpCount >= 3) unlockAchievement('help_seeker'); break;
+    default: print(`Команда не найдена: ${c}  (help — список)`, 'err'); sfx('err'); flashError();
+  }
+  checkLevel(cmd);
+  updateStats();
+  saveAll();
+}
+
+function printHelp() {
+  br();
+  line('<span style="color:#f59e0b;font-weight:700;">╔══════════════════════════════════════════════╗</span>');
+  line('<span style="color:#f59e0b;font-weight:700;">║           📚 СПРАВКА TERMINAL QUEST          ║</span>');
+  line('<span style="color:#f59e0b;font-weight:700;">╚══════════════════════════════════════════════╝</span>');
+  br();
+  line('<span style="color:#60a5fa;font-weight:600;">📁 НАВИГАЦИЯ</span>');
+  line('  <span style="color:#22d3ee;">pwd</span>       — текущая директория');
+  line('  <span style="color:#22d3ee;">ls [-a]</span>   — список файлов');
+  line('  <span style="color:#22d3ee;">cd <dir></span>  — сменить директорию');
+  line('  <span style="color:#22d3ee;">cat <file></span> — прочитать файл');
+  br();
+  line('<span style="color:#60a5fa;font-weight:600;">📝 ФАЙЛЫ</span>');
+  line('  <span style="color:#22d3ee;">touch</span> — создать файл');
+  line('  <span style="color:#22d3ee;">mkdir</span> — создать папку');
+  line('  <span style="color:#22d3ee;">rm</span>    — удалить');
+  line('  <span style="color:#22d3ee;">mv</span>    — переместить');
+  line('  <span style="color:#22d3ee;">cp</span>    — копировать');
+  br();
+  line('<span style="color:#60a5fa;font-weight:600;">⚙️ СИСТЕМА</span>');
+  line('  <span style="color:#22d3ee;">ps</span>     — процессы');
+  line('  <span style="color:#22d3ee;">kill</span>   — завершить процесс');
+  line('  <span style="color:#22d3ee;">top</span>    — мониторинг');
+  br();
+  line('<span style="color:#60a5fa;font-weight:600;">🎮 ИГРА</span>');
+  line('  <span style="color:#22d3ee;">theme</span> — сменить тему');
+  line('  <span style="color:#22d3ee;">music</span> — включить музыку');
+  line('  <span style="color:#22d3ee;">stats</span> — статистика');
+  line('  <span style="color:#22d3ee;">rank</span>  — ваш ранг');
+  br();
+  line('<span style="color:#64748b;">💡 TAB — автодополнение, ↑↓ — история</span>');
+}
+
+// Input Handling
+document.addEventListener('keydown', e => {
+  initAudio();
+  if (!e.ctrlKey && !e.metaKey && document.activeElement === inputEl) return;
+  
+  if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+    e.preventDefault();
+    const sidebar = document.querySelector('.tq-sidebar');
+    if (sidebar) sidebar.style.display = sidebar.style.display === 'none' ? 'flex' : 'none';
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'm') {
+    e.preventDefault();
+    if (musicInterval) { stopMusic(); musicBar.style.display = 'none'; }
+    else playTrack(currentTrack || 'cyber');
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    e.preventDefault();
+    outputEl.innerHTML = '';
+  }
+});
+
+inputEl.addEventListener('keydown', e => {
+  initAudio();
+  if (e.key === 'Enter') {
+    const val = inputEl.value;
+    inputEl.value = '';
+    sfx('type');
+    process(val);
+    return;
+  }
+  if (e.key === 'ArrowUp') { e.preventDefault(); if (histIdx < cmdHistory.length - 1) { histIdx++; inputEl.value = cmdHistory[histIdx] || ''; } }
+  if (e.key === 'ArrowDown') { e.preventDefault(); if (histIdx > 0) { histIdx--; inputEl.value = cmdHistory[histIdx] || ''; } else { histIdx = -1; inputEl.value = ''; } }
+});
+
+document.getElementById('terminal').addEventListener('click', () => { initAudio(); inputEl.focus(); });
+
+function saveAll() {
+  localStorage.setItem(SAVE_KEY, currentLevel);
+  safeSave(SETTINGS_KEY, settings);
+  safeSave(PROFILE_KEY, userProfile);
+  safeSave(FS_KEY, FS);
+  safeSave(STATS_KEY, stats);
+  safeSave(ACHIEVEMENTS_KEY, achievements);
+}
+
+// Boot
+async function boot() {
+  applyTheme(settings.theme);
+  updateUI();
+  updatePrompt();
+  updateStats();
+  inputEl.disabled = true;
+  initAudio();
+  
+  initDailySystem();
+  updateCategoryProgress();
+  updateLeaderboardDisplay();
+  showHint();
+
+  const loadingSteps = ['Инициализация', 'Загрузка файловой системы', 'Подготовка обучения', 'Готово'];
+
+  line('<span style="color:#22d3ee;">╔═════════════════════════════════════════╗</span>');
+  line('<span style="color:#22d3ee;">║</span> <span style="color:#e2e8f0;font-weight:700;">TERMINAL QUEST</span> <span style="color:#a855f7;">v2.7</span>                     <span style="color:#22d3ee;">║</span>');
+  line('<span style="color:#22d3ee;">║</span>   <span style="color:#6366f1;">Linux Terminal Simulator</span>           <span style="color:#22d3ee;">║</span>');
+  line('<span style="color:#22d3ee;">╚═════════════════════════════════════════╝</span>');
+  br();
+
+  for (let i = 0; i < loadingSteps.length; i++) {
+    await new Promise(r => setTimeout(r, 300));
+    line(`<span style="color:#64748b;">✓ ${loadingSteps[i]}</span>`);
+  }
+
+  br();
+  line('<span style="color:#22d3ee;">✓ Система инициализирована</span>');
+  br();
+  print("Введите 'help' для списка команд.", 'dim');
+  br();
+  
+  const hour = new Date().getHours();
+  if (hour >= 0 && hour < 6) unlockAchievement('night_owl');
+  
+  inputEl.disabled = false;
+  inputEl.focus();
+  
+  setTimeout(() => {
+    const tutorialDone = localStorage.getItem('tq_tutorial_v3');
+    if (!tutorialDone && stats.commandsExecuted < 5) {
+      document.getElementById('tutorialOverlay').style.display = 'flex';
+    }
+  }, 1500);
+}
+
+boot();
+})();
+</script>
+</body>
+</html>
